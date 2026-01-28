@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Sick Leave Request Details{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h2>Sick Leave Request Details</h2>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Request Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Student:</strong> {{ request.student.user.username }} ({{ request.student.roll_number }})
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Request Type:</strong> {{ request.request_type }}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Start Date:</strong> {{ request.start_date.strftime('%Y-%m-%d') }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>End Date:</strong> {{ request.end_date.strftime('%Y-%m-%d') }}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Reason:</strong>
+                        <p>{{ request.reason }}</p>
+                    </div>
+                    
+                    {% if request.medical_certificate %}
+                    <div class="mb-3">
+                        <strong>Medical Certificate:</strong>
+                        <p>{{ request.medical_certificate }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Overall Status:</strong>
+                            <span class="badge bg-{% if request.overall_status == 'Approved' %}success{% elif request.overall_status == 'Rejected' %}danger{% else %}warning{% endif %}">
+                                {{ request.overall_status }}
+                            </span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Submitted:</strong> {{ request.created_at.strftime('%Y-%m-%d %H:%M') }}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <strong>Approval Workflow Status:</strong>
+                            <div class="mt-2">
+                                <div class="mb-2">
+                                    <span class="badge bg-{% if request.h2_status == 'Approved' %}success{% elif request.h2_status == 'Rejected' %}danger{% else %}secondary{% endif %}">H2: {{ request.h2_status }}</span>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="badge bg-{% if request.warden_status == 'Approved' %}success{% elif request.warden_status == 'Rejected' %}danger{% else %}secondary{% endif %}">Warden: {{ request.warden_status }}</span>
+                                </div>
+                                <div class="mb-2">
+                                    <span class="badge bg-{% if request.office_status == 'Approved' %}success{% elif request.office_status == 'Rejected' %}danger{% else %}secondary{% endif %}">Office: {{ request.office_status }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if request.overall_status == 'Pending' and current_user.role in ['H2', 'Warden', 'Office', 'Director'] %}
+            <div class="card">
+                <div class="card-header">
+                    <h5>Approval Actions</h5>
+                </div>
+                <div class="card-body">
+                    {% if current_user.role == 'H2' and request.h2_status == 'Pending' %}
+                    <form method="POST" action="{{ url_for('sickleave.h2_approve', request_id=request.id) }}">
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes (Optional)</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="2"></textarea>
+                        </div>
+                        <button type="submit" name="action" value="approve" class="btn btn-success">H2 Approve</button>
+                        <button type="submit" name="action" value="reject" class="btn btn-danger">H2 Reject</button>
+                    </form>
+                    {% elif current_user.role == 'Warden' and request.warden_status == 'Pending' and request.h2_status == 'Approved' %}
+                    <form method="POST" action="{{ url_for('sickleave.warden_verify', request_id=request.id) }}">
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes (Optional)</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="2"></textarea>
+                        </div>
+                        <button type="submit" name="action" value="approve" class="btn btn-success">Warden Verify & Approve</button>
+                        <button type="submit" name="action" value="reject" class="btn btn-danger">Warden Reject</button>
+                    </form>
+                    {% elif current_user.role == 'Office' and request.office_status == 'Pending' and request.warden_status == 'Approved' %}
+                    <form method="POST" action="{{ url_for('sickleave.office_approve', request_id=request.id) }}">
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes (Optional)</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="2"></textarea>
+                        </div>
+                        <button type="submit" name="action" value="approve" class="btn btn-success">Office Approve</button>
+                        <button type="submit" name="action" value="reject" class="btn btn-danger">Office Reject</button>
+                    </form>
+                    {% elif current_user.role == 'Director' and request.director_status == 'Pending' %}
+                    <form method="POST" action="{{ url_for('sickleave.director_approve', request_id=request.id) }}">
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notes (Optional)</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="2"></textarea>
+                        </div>
+                        <button type="submit" name="action" value="approve" class="btn btn-success">Director Approve</button>
+                        <button type="submit" name="action" value="reject" class="btn btn-danger">Director Reject</button>
+                    </form>
+                    {% else %}
+                    <p class="text-muted">No pending approvals for your role at this stage.</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                <a href="{{ url_for('sickleave.requests_list') }}" class="btn btn-secondary">Back</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

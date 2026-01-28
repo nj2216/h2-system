@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Student - H2 System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header border-bottom">
+                <h4 class="mb-0"><i class="bi bi-pencil"></i> Edit Student Profile</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    <h5 class="mb-3 text-muted">Basic Information</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="date_of_birth" class="form-label">Date of Birth</label>
+                            <input type="date" class="form-control" id="date_of_birth" name="date_of_birth" value="{{ student.date_of_birth or '' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="gender" class="form-label">Gender</label>
+                            <select class="form-control" id="gender" name="gender">
+                                <option value="">-- Select --</option>
+                                <option value="M" {% if student.gender == 'M' %}selected{% endif %}>Male</option>
+                                <option value="F" {% if student.gender == 'F' %}selected{% endif %}>Female</option>
+                                <option value="O" {% if student.gender == 'O' %}selected{% endif %}>Other</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="blood_group" class="form-label">Blood Group</label>
+                            <select class="form-control" id="blood_group" name="blood_group">
+                                <option value="">-- Select --</option>
+                                <option value="A+" {% if student.blood_group == 'A+' %}selected{% endif %}>A+</option>
+                                <option value="A-" {% if student.blood_group == 'A-' %}selected{% endif %}>A-</option>
+                                <option value="B+" {% if student.blood_group == 'B+' %}selected{% endif %}>B+</option>
+                                <option value="B-" {% if student.blood_group == 'B-' %}selected{% endif %}>B-</option>
+                                <option value="AB+" {% if student.blood_group == 'AB+' %}selected{% endif %}>AB+</option>
+                                <option value="AB-" {% if student.blood_group == 'AB-' %}selected{% endif %}>AB-</option>
+                                <option value="O+" {% if student.blood_group == 'O+' %}selected{% endif %}>O+</option>
+                                <option value="O-" {% if student.blood_group == 'O-' %}selected{% endif %}>O-</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="hostel_room" class="form-label">Room Number</label>
+                            <input type="text" class="form-control" id="hostel_room" name="hostel_room" value="{{ student.hostel_room or '' }}">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="phone_number" class="form-label">Phone Number</label>
+                        <input type="tel" class="form-control" id="phone_number" name="phone_number" value="{{ student.phone_number or '' }}">
+                    </div>
+
+                    <hr>
+
+                    <h5 class="mb-3 text-muted">Medical History</h5>
+                    <div class="mb-3">
+                        <label for="allergies" class="form-label">Allergies</label>
+                        <textarea class="form-control" id="allergies" name="allergies" rows="2">{{ student.allergies or '' }}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="medical_conditions" class="form-label">Medical Conditions</label>
+                        <textarea class="form-control" id="medical_conditions" name="medical_conditions" rows="2">{{ student.medical_conditions or '' }}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="current_medications" class="form-label">Current Medications</label>
+                        <textarea class="form-control" id="current_medications" name="current_medications" rows="2">{{ student.current_medications or '' }}</textarea>
+                    </div>
+
+                    <hr>
+
+                    <h5 class="mb-3 text-muted">Emergency Contact</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="emergency_contact_name" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="emergency_contact_name" name="emergency_contact_name" value="{{ student.emergency_contact_name or '' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="emergency_contact_phone" class="form-label">Phone</label>
+                            <input type="tel" class="form-control" id="emergency_contact_phone" name="emergency_contact_phone" value="{{ student.emergency_contact_phone or '' }}">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="emergency_contact_relation" class="form-label">Relation</label>
+                        <input type="text" class="form-control" id="emergency_contact_relation" name="emergency_contact_relation" value="{{ student.emergency_contact_relation or '' }}">
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('students.view_student', student_id=student.id) }}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle"></i> Update Profile</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

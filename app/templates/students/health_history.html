@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Health History - H2 System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2><i class="bi bi-clock-history"></i> {{ student.user.first_name }}'s Health History</h2>
+        <p class="text-muted">Roll Number: {{ student.roll_number }}</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('students.view_student', student_id=student.id) }}" class="btn btn-primary">
+            <i class="bi bi-arrow-left"></i> Back to Profile
+        </a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-12">
+        <ul class="nav nav-tabs" role="tablist">
+            <li class="nav-item">
+                <a class="nav-link active" id="visits-tab" data-bs-toggle="tab" href="#visits" role="tab">Doctor Visits ({{ doctor_visits|length }})</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="prescriptions-tab" data-bs-toggle="tab" href="#prescriptions" role="tab">Prescriptions ({{ prescriptions|length }})</a>
+            </li>
+        </ul>
+    </div>
+</div>
+
+<div class="tab-content">
+    <!-- Doctor Visits Tab -->
+    <div class="tab-pane fade show active" id="visits" role="tabpanel">
+        <div class="card shadow">
+            <div class="card-body">
+                {% if doctor_visits %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Date</th>
+                                <th>Doctor</th>
+                                <th>Symptoms</th>
+                                <th>Diagnosis</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for visit in doctor_visits %}
+                            <tr>
+                                <td>{{ visit.visit_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>{{ visit.doctor.first_name if visit.doctor else 'N/A' }}</td>
+                                <td>{{ visit.symptoms[:40] if visit.symptoms else '-' }}...</td>
+                                <td>{{ visit.diagnosis[:40] if visit.diagnosis else '-' }}...</td>
+                                <td>
+                                    <a href="{{ url_for('health.view_visit', visit_id=visit.id) }}" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> No doctor visits recorded yet.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Prescriptions Tab -->
+    <div class="tab-pane fade" id="prescriptions" role="tabpanel">
+        <div class="card shadow">
+            <div class="card-body">
+                {% if prescriptions %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Medicine</th>
+                                <th>Dosage</th>
+                                <th>Frequency</th>
+                                <th>Duration</th>
+                                <th>Created</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for rx in prescriptions %}
+                            <tr>
+                                <td><strong>{{ rx.medicine_name }}</strong></td>
+                                <td>{{ rx.dosage }}</td>
+                                <td>{{ rx.frequency }}</td>
+                                <td>{{ rx.duration_days }} days</td>
+                                <td>{{ rx.created_at.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    {% if rx.is_dispensed %}
+                                        <span class="badge bg-success">Dispensed</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> No prescriptions recorded yet.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

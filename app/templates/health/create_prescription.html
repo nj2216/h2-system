@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Create Prescription{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h2>Create Prescription</h2>
+            
+            <form method="POST" class="needs-validation" novalidate>
+                <div class="mb-3">
+                    <label for="student_id" class="form-label">Student</label>
+                    <select class="form-select" id="student_id" name="student_id" required>
+                        <option value="">Select Student</option>
+                        {% for student in students %}
+                        <option value="{{ student.id }}">{{ student.user.username }} ({{ student.roll_number }})</option>
+                        {% endfor %}
+                    </select>
+                    <div class="invalid-feedback">Please select a student.</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="medicine_name" class="form-label">Medicine</label>
+                    <input type="text" class="form-control" id="medicine_name" name="medicine_name" placeholder="Medicine name" required>
+                    <div class="invalid-feedback">Please provide a medicine name.</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="dosage" class="form-label">Dosage</label>
+                    <input type="text" class="form-control" id="dosage" name="dosage" placeholder="e.g., 500mg" required>
+                    <div class="invalid-feedback">Please provide dosage.</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="frequency" class="form-label">Frequency</label>
+                    <input type="text" class="form-control" id="frequency" name="frequency" placeholder="e.g., 3 times daily" required>
+                    <div class="invalid-feedback">Please provide frequency.</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="duration_days" class="form-label">Duration (days)</label>
+                    <input type="number" class="form-control" id="duration_days" name="duration_days" placeholder="e.g., 7" required>
+                    <div class="invalid-feedback">Please provide duration in days.</div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="instructions" class="form-label">Special Instructions</label>
+                    <textarea class="form-control" id="instructions" name="instructions" rows="3" placeholder="Any special instructions..."></textarea>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{{ url_for('health.prescriptions_list') }}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Create Prescription</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Form validation
+    (function () {
+        'use strict';
+        window.addEventListener('load', function () {
+            var forms = document.querySelectorAll('.needs-validation');
+            Array.prototype.slice.call(forms).forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        }, false);
+    }());
+</script>
+{% endblock %}

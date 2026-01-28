@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}H2 System - Health & Hostel Management{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body data-bs-theme="light">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom" data-bs-theme="light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('dashboards.dashboard') }}">
+                <i class="bi bi-hospital"></i> H2 System
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if current_user.is_authenticated %}
+                        {% if current_user.role == 'H2' %}
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('students.students_list') }}">Students</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('health.visits_list') }}">Doctor Visits</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('health.prescriptions_list') }}">Prescriptions</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('stock.inventory') }}">Medicine Stock</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('sickleave.requests_list') }}">Sick Leave</a></li>
+                        {% elif current_user.role == 'Warden' %}
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('students.students_list') }}">Students</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('assets.assets_list') }}">Assets</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('sickleave.requests_list') }}">Sick Leave</a></li>
+                        {% elif current_user.role == 'Office' %}
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('sickleave.requests_list') }}">Sick Leave</a></li>
+                        {% elif current_user.role == 'Director' %}
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('students.students_list') }}">Students</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.users_list') }}">Users</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('health.visits_list') }}">Health</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('stock.inventory') }}">Stock</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('assets.assets_list') }}">Assets</a></li>
+                        {% elif current_user.role == 'Doctor' %}
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('health.visits_list') }}">Doctor Visits</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('health.prescriptions_list') }}">Prescriptions</a></li>
+                        {% endif %}
+                    {% endif %}
+                    
+                    <li class="nav-item">
+                        <button id="themeToggle" class="btn btn-sm btn-outline-secondary ms-2" type="button" title="Toggle dark mode">
+                            <i class="bi bi-moon-stars"></i>
+                        </button>
+                    </li>
+                    
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-person-circle"></i> {{ current_user.first_name or current_user.username }}
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                <li><a class="dropdown-item" href="{{ url_for('dashboards.dashboard') }}">Dashboard</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+                        <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login') }}">Login</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    <div class="container-fluid mt-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Main Content -->
+    <main class="container-fluid mt-4 mb-5">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-body-tertiary border-top py-4 mt-5">
+        <div class="container text-center">
+            <p class="mb-0 text-body-secondary">&copy; 2026 H2 System - Health & Hostel Management System</p>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

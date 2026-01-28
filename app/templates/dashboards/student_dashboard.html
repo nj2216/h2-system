@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Student Dashboard - H2 System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2><i class="bi bi-person-heart"></i> My Health Profile</h2>
+    </div>
+</div>
+
+{% if student %}
+    <!-- Student Info Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-2">Roll Number</h6>
+                    <h4>{{ student.roll_number }}</h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-2">Blood Group</h6>
+                    <h4>{{ student.blood_group or 'Not Set' }}</h4>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title text-muted mb-2">Hostel Room</h6>
+                    <h4>{{ student.hostel_room or 'Not Set' }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <a href="{{ url_for('students.health_history', student_id=student.id) }}" style="text-decoration: none; color: inherit;">
+                <div class="card shadow-sm border-start border-5" style="border-color: #1f2937 !important; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <div class="card-body text-center">
+                        <h3 class="mb-2">{{ stats.total_visits }}</h3>
+                        <p class="mb-0">Doctor Visits</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-4 mb-3">
+        <a href="{{ url_for('health.prescriptions_list') }}" style="text-decoration: none; color: inherit;">
+                <div class="card shadow-sm border-start border-5" style="border-color: #1f2937 !important; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <div class="card-body text-center">
+                        <h3 class="mb-2">{{ stats.pending_prescriptions }}</h3>
+                        <p class="mb-0">Pending Prescriptions</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <a href="{{ url_for('sickleave.requests_list') }}" style="text-decoration: none; color: inherit;">
+                <div class="card shadow-sm border-start border-5" style="border-color: #1f2937 !important; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <div class="card-body text-center">
+                        <h3 class="mb-2">{{ stats.total_requests }}</h3>
+                        <p class="mb-0">Sick Leave Requests</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Pending Prescriptions -->
+    {% if pending_prescriptions %}
+    <div class="card shadow mb-4">
+        <div class="card-header border-bottom">
+            <h5 class="mb-0"><i class="bi bi-prescription2"></i> Pending Prescriptions</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Medicine</th>
+                            <th>Dosage</th>
+                            <th>Frequency</th>
+                            <th>Duration</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rx in pending_prescriptions %}
+                        <tr>
+                            <td>{{ rx.medicine_name }}</td>
+                            <td>{{ rx.dosage }}</td>
+                            <td>{{ rx.frequency }}</td>
+                            <td>{{ rx.duration_days }} days</td>
+                            <td><span class="badge bg-warning">Pending</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Doctor Visits -->
+    {% if recent_visits %}
+    <div class="card shadow mb-4">
+        <div class="card-header border-bottom">
+            <h5 class="mb-0"><i class="bi bi-calendar2-check"></i> Recent Doctor Visits</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Doctor</th>
+                            <th>Diagnosis</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for visit in recent_visits %}
+                        <tr>
+                            <td>{{ visit.visit_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ visit.doctor.first_name if visit.doctor else 'N/A' }}</td>
+                            <td>{{ visit.diagnosis[:30] if visit.diagnosis else '-' }}...</td>
+                            <td>
+                                <a href="{{ url_for('health.view_visit', visit_id=visit.id) }}" class="btn btn-sm btn-primary">
+                                    View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Action Buttons -->
+    <div class="row">
+        <div class="col-md-12">
+            <a href="{{ url_for('students.view_student', student_id=student.id) }}" class="btn btn-primary">
+                <i class="bi bi-person-vcard"></i> View Full Profile
+            </a>
+            <a href="{{ url_for('students.health_history', student_id=student.id) }}" class="btn btn-success">
+                <i class="bi bi-clock-history"></i> View Health History
+            </a>
+        </div>
+    </div>
+{% else %}
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle"></i> Student profile not found. Please contact administration.
+    </div>
+{% endif %}
+{% endblock %}

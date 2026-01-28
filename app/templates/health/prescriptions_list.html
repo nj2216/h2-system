@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Prescriptions - H2 System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2><i class="bi bi-prescription2"></i> Prescriptions</h2>
+    </div>
+    <div class="col-md-4 text-end">
+        {% if current_user.role in ['H2', 'Doctor'] %}
+        <a href="{{ url_for('health.create_prescription') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Create Prescription
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Student</th>
+                        <th>Medicine</th>
+                        <th>Dosage</th>
+                        <th>Frequency</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for prescription in prescriptions.items %}
+                    <tr>
+                        <td>{{ prescription.student.user.first_name }} {{ prescription.student.user.last_name }}</td>
+                        <td>{{ prescription.medicine_name }}</td>
+                        <td>{{ prescription.dosage }}</td>
+                        <td>{{ prescription.frequency }}</td>
+                        <td>
+                            {% if prescription.is_dispensed %}
+                                <span class="badge bg-success">Dispensed</span>
+                            {% else %}
+                                <span class="badge bg-warning">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('health.view_prescription', prescription_id=prescription.id) }}" class="btn btn-sm btn-primary">View</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">No prescriptions</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

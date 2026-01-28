@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Prescription Details{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h2>Prescription Details</h2>
+            
+            <div class="card">
+                <div class="card-header">
+                    <h5>Prescription Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Student:</strong> {{ prescription.student.user.username }} ({{ prescription.student.roll_number }})
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Status:</strong> 
+                            {% if prescription.is_dispensed %}
+                            <span class="badge bg-success">Dispensed</span>
+                            {% else %}
+                            <span class="badge bg-warning">Pending</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Medicine:</strong> {{ prescription.medicine_id }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Dosage:</strong> {{ prescription.dosage }}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Frequency:</strong> {{ prescription.frequency }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Duration:</strong> {{ prescription.duration }}
+                        </div>
+                    </div>
+                    
+                    {% if prescription.instructions %}
+                    <div class="mb-3">
+                        <strong>Instructions:</strong>
+                        <p>{{ prescription.instructions }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Created:</strong> {{ prescription.created_at.strftime('%Y-%m-%d %H:%M') }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Doctor:</strong> {{ prescription.doctor.user.username if prescription.doctor else 'N/A' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            {% if not prescription.is_dispensed and current_user.role == 'H2' %}
+            <form method="POST" action="{{ url_for('health.dispense_prescription', prescription_id=prescription.id) }}" class="mt-4">
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{{ url_for('health.prescriptions_list') }}" class="btn btn-secondary">Back</a>
+                    <button type="submit" class="btn btn-success">Mark as Dispensed</button>
+                </div>
+            </form>
+            {% else %}
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                <a href="{{ url_for('health.prescriptions_list') }}" class="btn btn-secondary">Back</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

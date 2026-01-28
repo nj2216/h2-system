@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Low Stock Alerts{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2>Low Stock Alerts</h2>
+            <p class="text-muted">Medicines below minimum stock level</p>
+            
+            {% if medicines %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Medicine Name</th>
+                            <th>Generic Name</th>
+                            <th>Dosage</th>
+                            <th>Current Stock</th>
+                            <th>Min Level</th>
+                            <th>Supplier</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for medicine in medicines %}
+                        <tr class="table-danger">
+                            <td>{{ medicine.name }}</td>
+                            <td>{{ medicine.generic_name or 'N/A' }}</td>
+                            <td>{{ medicine.dosage }}</td>
+                            <td>{{ medicine.quantity }}</td>
+                            <td>{{ medicine.min_stock_level }}</td>
+                            <td>{{ medicine.supplier or 'N/A' }}</td>
+                            <td>
+                                <a href="{{ url_for('stock.view_medicine', medicine_id=medicine.id) }}" class="btn btn-sm btn-info">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-success">
+                <strong>Great!</strong> All medicines are well stocked.
+            </div>
+            {% endif %}
+            
+            <a href="{{ url_for('stock.inventory') }}" class="btn btn-secondary mt-3">Back to Inventory</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

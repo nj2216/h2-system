@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}Edit User - H2 System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header border-bottom">
+                <h4 class="mb-0"><i class="bi bi-pencil"></i> Edit User</h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="first_name" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" value="{{ user.first_name or '' }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="last_name" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" value="{{ user.last_name or '' }}">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" value="{{ user.email }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="role" class="form-label">Role</label>
+                        <select class="form-control" id="role" name="role">
+                            <option value="H2" {% if user.role == 'H2' %}selected{% endif %}>H2 (Health Team)</option>
+                            <option value="Warden" {% if user.role == 'Warden' %}selected{% endif %}>Warden</option>
+                            <option value="Office" {% if user.role == 'Office' %}selected{% endif %}>Office</option>
+                            <option value="Director" {% if user.role == 'Director' %}selected{% endif %}>Director</option>
+                            <option value="Doctor" {% if user.role == 'Doctor' %}selected{% endif %}>Doctor</option>
+                            <option value="Student" {% if user.role == 'Student' %}selected{% endif %}>Student</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="is_active" name="is_active" {% if user.is_active %}checked{% endif %}>
+                        <label class="form-check-label" for="is_active">
+                            Active
+                        </label>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('auth.users_list') }}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle"></i> Update User</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

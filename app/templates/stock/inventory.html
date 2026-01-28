@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Medicine Inventory - H2 System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2><i class="bi bi-capsule"></i> Medicine Inventory</h2>
+    </div>
+    <div class="col-md-4 text-end">
+        {% if current_user.role in ['H2', 'Director'] %}
+        <a href="{{ url_for('stock.add_medicine') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Add Medicine
+        </a>
+        {% endif %}
+        <a href="{{ url_for('stock.low_stock_alerts') }}" class="btn btn-warning">
+            <i class="bi bi-exclamation-triangle"></i> Low Stock
+        </a>
+    </div>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <form method="get" class="mb-3">
+            <div class="row">
+                <div class="col-md-8">
+                    <input type="text" class="form-control" placeholder="Search medicine..." name="search" value="{{ search }}">
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-primary w-100" type="submit"><i class="bi bi-search"></i></button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Medicine Name</th>
+                        <th>Dosage</th>
+                        <th>Stock</th>
+                        <th>Min Level</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for medicine in medicines.items %}
+                    <tr>
+                        <td><strong>{{ medicine.name }}</strong></td>
+                        <td>{{ medicine.dosage }}</td>
+                        <td>{{ medicine.quantity }}</td>
+                        <td>{{ medicine.min_stock_level }}</td>
+                        <td>
+                            {% if medicine.is_low_stock %}
+                                <span class="badge bg-danger">Low Stock</span>
+                            {% else %}
+                                <span class="badge bg-success">OK</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('stock.view_medicine', medicine_id=medicine.id) }}" class="btn btn-sm btn-primary">View</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">No medicines found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

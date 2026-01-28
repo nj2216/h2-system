@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Asset Condition Report{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2>Asset Condition Report</h2>
+            
+            {% for condition, assets_list in assets_by_condition.items() %}
+            <div class="mb-4">
+                <h4>
+                    {% if condition == 'Good' %}
+                    <span class="badge bg-success">{{ condition }}</span>
+                    {% elif condition == 'Fair' %}
+                    <span class="badge bg-warning">{{ condition }}</span>
+                    {% else %}
+                    <span class="badge bg-danger">{{ condition }}</span>
+                    {% endif %}
+                    ({{ assets_list|length }} assets)
+                </h4>
+                
+                {% if assets_list %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Asset Code</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Location</th>
+                                <th>Quantity</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for asset in assets_list %}
+                            <tr>
+                                <td>{{ asset.asset_code }}</td>
+                                <td>{{ asset.name }}</td>
+                                <td>{{ asset.category }}</td>
+                                <td>{{ asset.location }}</td>
+                                <td>{{ asset.quantity }}</td>
+                                <td>
+                                    <a href="{{ url_for('assets.view_asset', asset_id=asset.id) }}" class="btn btn-sm btn-info">View</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No assets in this condition.</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+            
+            <a href="{{ url_for('assets.assets_list') }}" class="btn btn-secondary">Back to Assets</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Approved Requests{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2>Approved Requests</h2>
+            
+            {% if requests.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Student</th>
+                            <th>Type</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Submitted</th>
+                            <th>Approved Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in requests.items %}
+                        <tr>
+                            <td>{{ req.student.user.username }}</td>
+                            <td>{{ req.request_type }}</td>
+                            <td>{{ req.start_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ req.end_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ req.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ req.approved_at.strftime('%Y-%m-%d %H:%M') if req.approved_at else 'N/A' }}</td>
+                            <td>
+                                <a href="{{ url_for('sickleave.view_request', request_id=req.id) }}" class="btn btn-sm btn-info">View</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if requests.pages > 1 %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination">
+                    {% if requests.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('sickleave.approved_requests', page=requests.prev_num) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in requests.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num == requests.page %}
+                            <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+                            {% else %}
+                            <li class="page-item"><a class="page-link" href="{{ url_for('sickleave.approved_requests', page=page_num) }}">{{ page_num }}</a></li>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if requests.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('sickleave.approved_requests', page=requests.next_num) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <div class="alert alert-info">No approved requests yet.</div>
+            {% endif %}
+            
+            <a href="{{ url_for('sickleave.requests_list') }}" class="btn btn-secondary mt-3">Back to All Requests</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

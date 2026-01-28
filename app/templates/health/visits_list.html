@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Doctor Visits - H2 System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2><i class="bi bi-calendar2-check"></i> Doctor Visits</h2>
+    </div>
+    <div class="col-md-4 text-end">
+        {% if current_user.role in ['H2', 'Doctor'] %}
+        <a href="{{ url_for('health.create_visit') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Record Visit
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Student</th>
+                        <th>Doctor</th>
+                        <th>Date</th>
+                        <th>Diagnosis</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for visit in visits.items %}
+                    <tr>
+                        <td>{{ visit.student.user.first_name }} {{ visit.student.user.last_name }}</td>
+                        <td>{{ visit.doctor.first_name if visit.doctor else 'N/A' }}</td>
+                        <td>{{ visit.visit_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>{{ visit.diagnosis[:40] if visit.diagnosis else '-' }}...</td>
+                        <td>
+                            <a href="{{ url_for('health.view_visit', visit_id=visit.id) }}" class="btn btn-sm btn-primary">View</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">No visits recorded</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Director Dashboard - H2 System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2><i class="bi bi-crown"></i> Director Dashboard</h2>
+    </div>
+</div>
+
+<!-- Main Statistics -->
+<div class="row mb-4">
+    <div class="col-md-2 mb-3">
+        <a href="{{ url_for('auth.users_list') }}" style="text-decoration: none; color: inherit;">
+            <div class="card bg-primary text-white shadow-sm" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                <div class="card-body text-center">
+                    <h3 class="mb-2">{{ stats.total_users }}</h3>
+                    <p class="mb-0 small">Total Users</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-2 mb-3">
+        <a href="{{ url_for('students.students_list') }}" style="text-decoration: none; color: inherit;">
+            <div class="card bg-success text-white shadow-sm" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                <div class="card-body text-center">
+                    <h3 class="mb-2">{{ stats.total_students }}</h3>
+                    <p class="mb-0 small">Students</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-2 mb-3">
+        <a href="{{ url_for('health.visits_list') }}" style="text-decoration: none; color: inherit;">
+            <div class="card bg-info text-white shadow-sm" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                <div class="card-body text-center">
+                    <h3 class="mb-2">{{ stats.total_visits }}</h3>
+                    <p class="mb-0 small">Doctor Visits</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-2 mb-3">
+        <a href="{{ url_for('stock.inventory') }}" style="text-decoration: none; color: inherit;">
+            <div class="card bg-warning text-dark shadow-sm" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                <div class="card-body text-center">
+                    <h3 class="mb-2">{{ stats.total_medicines }}</h3>
+                    <p class="mb-0 small">Medicines</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-2 mb-3">
+        <a href="{{ url_for('assets.assets_list') }}" style="text-decoration: none; color: inherit;">
+            <div class="card bg-secondary text-white shadow-sm" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                <div class="card-body text-center">
+                    <h3 class="mb-2">{{ stats.total_assets }}</h3>
+                    <p class="mb-0 small">Assets</p>
+                </div>
+            </div>
+        </a>
+    </div>
+
+    <div class="col-md-2 mb-3">
+        <a href="{{ url_for('stock.low_stock_alerts') }}" style="text-decoration: none; color: inherit;">
+            <div class="card bg-danger text-white shadow-sm" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                <div class="card-body text-center">
+                    <h3 class="mb-2">{{ stats.low_stock_medicines }}</h3>
+                    <p class="mb-0 small">Low Stock</p>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<!-- Alert Cards -->
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card border-danger shadow-sm">
+            <div class="card-body">
+                <h6 class="card-title text-danger"><i class="bi bi-exclamation-triangle"></i> Poor Assets</h6>
+                <h4>{{ stats.poor_assets }}</h4>
+                <small class="text-muted">Requiring attention</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-3">
+        <div class="card border-warning shadow-sm">
+            <div class="card-body">
+                <h6 class="card-title text-warning"><i class="bi bi-clock-history"></i> Pending Director Review</h6>
+                <h4>{{ stats.pending_director_requests }}</h4>
+                <small class="text-muted">Awaiting your approval</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-3">
+        <div class="card border-danger shadow-sm">
+            <div class="card-body">
+                <h6 class="card-title text-danger"><i class="bi bi-x-circle"></i> Rejected Requests</h6>
+                <h4>{{ stats.rejected_requests }}</h4>
+                <small class="text-muted">Total rejected</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Statistics by Role -->
+<div class="card shadow mb-4">
+    <div class="card-header border-bottom">
+        <h5 class="mb-0"><i class="bi bi-people-fill"></i> Users by Role</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% for role, count in stats.role_stats.items() %}
+            <div class="col-md-3 mb-3">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h6 class="card-title">{{ role }}</h6>
+                        <h4 class="mb-0">{{ count }}</h4>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Action Buttons -->
+<div class="row">
+    <div class="col-md-12">
+        <a href="{{ url_for('auth.register') }}" class="btn btn-primary">
+            <i class="bi bi-person-plus"></i> Register User
+        </a>
+        <a href="{{ url_for('auth.users_list') }}" class="btn btn-info">
+            <i class="bi bi-people"></i> Manage Users
+        </a>
+        <a href="{{ url_for('students.students_list') }}" class="btn btn-success">
+            <i class="bi bi-person-vcard"></i> Students
+        </a>
+        <a href="{{ url_for('stock.inventory') }}" class="btn btn-warning">
+            <i class="bi bi-capsule"></i> Medicine Stock
+        </a>
+        <a href="{{ url_for('assets.assets_list') }}" class="btn btn-secondary">
+            <i class="bi bi-boxes"></i> Assets
+        </a>
+    </div>
+</div>
+{% endblock %}

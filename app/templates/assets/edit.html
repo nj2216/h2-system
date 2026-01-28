@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Asset{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h2>Edit Asset</h2>
+            
+            <form method="POST" class="needs-validation" novalidate>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="name" class="form-label">Asset Name</label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ asset.name }}" required>
+                        <div class="invalid-feedback">Please provide an asset name.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="category" class="form-label">Category</label>
+                        <input type="text" class="form-control" id="category" name="category" value="{{ asset.category }}" required>
+                        <div class="invalid-feedback">Please provide a category.</div>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="location" class="form-label">Location</label>
+                        <input type="text" class="form-control" id="location" name="location" value="{{ asset.location }}" required>
+                        <div class="invalid-feedback">Please provide a location.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="quantity" class="form-label">Quantity</label>
+                        <input type="number" class="form-control" id="quantity" name="quantity" value="{{ asset.quantity }}" required>
+                        <div class="invalid-feedback">Please provide quantity.</div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="description" class="form-label">Description</label>
+                    <textarea class="form-control" id="description" name="description" rows="3">{{ asset.description or '' }}</textarea>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="condition" class="form-label">Condition</label>
+                        <select class="form-select" id="condition" name="condition" required>
+                            <option value="Good" {% if asset.condition == 'Good' %}selected{% endif %}>Good</option>
+                            <option value="Fair" {% if asset.condition == 'Fair' %}selected{% endif %}>Fair</option>
+                            <option value="Poor" {% if asset.condition == 'Poor' %}selected{% endif %}>Poor</option>
+                            <option value="Damaged" {% if asset.condition == 'Damaged' %}selected{% endif %}>Damaged</option>
+                        </select>
+                        <div class="invalid-feedback">Please select a condition.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="purchase_date" class="form-label">Purchase Date</label>
+                        <input type="date" class="form-control" id="purchase_date" name="purchase_date" value="{{ asset.purchase_date or '' }}">
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="cost" class="form-label">Cost</label>
+                        <input type="number" class="form-control" id="cost" name="cost" step="0.01" value="{{ asset.cost or '' }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="warranty_expiry" class="form-label">Warranty Expiry</label>
+                        <input type="date" class="form-control" id="warranty_expiry" name="warranty_expiry" value="{{ asset.warranty_expiry or '' }}">
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{{ url_for('assets.view_asset', asset_id=asset.id) }}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Update Asset</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Form validation
+    (function () {
+        'use strict';
+        window.addEventListener('load', function () {
+            var forms = document.querySelectorAll('.needs-validation');
+            Array.prototype.slice.call(forms).forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        }, false);
+    }());
+</script>
+{% endblock %}

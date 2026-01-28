@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}{{ student.roll_number }} - H2 System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2>{{ student.user.first_name }} {{ student.user.last_name }}</h2>
+        <p class="text-muted">Roll Number: <strong>{{ student.roll_number }}</strong></p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('students.edit_student', student_id=student.id) }}" class="btn btn-primary">
+            <i class="bi bi-pencil"></i> Edit Profile
+        </a>
+        <a href="{{ url_for('students.health_history', student_id=student.id) }}" class="btn btn-success">
+            <i class="bi bi-clock-history"></i> Health History
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header border-bottom">
+                <h5 class="mb-0"><i class="bi bi-person"></i> Personal Information</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <th>Email:</th>
+                        <td>{{ student.user.email }}</td>
+                    </tr>
+                    <tr>
+                        <th>Date of Birth:</th>
+                        <td>{{ student.date_of_birth or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Gender:</th>
+                        <td>{{ student.gender or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Phone:</th>
+                        <td>{{ student.phone_number or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Room Number:</th>
+                        <td>{{ student.hostel_room or '-' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header border-bottom">
+                <h5 class="mb-0"><i class="bi bi-heart-pulse"></i> Medical Information</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <th>Blood Group:</th>
+                        <td>{{ student.blood_group or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Allergies:</th>
+                        <td>{{ student.allergies or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Medical Conditions:</th>
+                        <td>{{ student.medical_conditions or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Current Medications:</th>
+                        <td>{{ student.current_medications or '-' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card shadow">
+            <div class="card-header border-bottom">
+                <h5 class="mb-0"><i class="bi bi-telephone"></i> Emergency Contact</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <th>Name:</th>
+                        <td>{{ student.emergency_contact_name or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Phone:</th>
+                        <td>{{ student.emergency_contact_phone or '-' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Relation:</th>
+                        <td>{{ student.emergency_contact_relation or '-' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <h4 class="mb-3">Recent Activity</h4>
+    </div>
+</div>
+
+{% if doctor_visits %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-header border-bottom">
+                <h5 class="mb-0"><i class="bi bi-calendar2-check"></i> Recent Doctor Visits (Last 5)</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Doctor</th>
+                                <th>Diagnosis</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for visit in doctor_visits[-5:] %}
+                            <tr>
+                                <td>{{ visit.visit_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>{{ visit.doctor.first_name if visit.doctor else 'N/A' }}</td>
+                                <td>{{ visit.diagnosis[:30] if visit.diagnosis else '-' }}...</td>
+                                <td>
+                                    <a href="{{ url_for('health.view_visit', visit_id=visit.id) }}" class="btn btn-sm btn-primary">View</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if prescriptions %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-prescription2"></i> Active Prescriptions</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Medicine</th>
+                                <th>Dosage</th>
+                                <th>Frequency</th>
+                                <th>Duration</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for rx in prescriptions %}
+                            <tr>
+                                <td>{{ rx.medicine_name }}</td>
+                                <td>{{ rx.dosage }}</td>
+                                <td>{{ rx.frequency }}</td>
+                                <td>{{ rx.duration_days }} days</td>
+                                <td>
+                                    {% if rx.is_dispensed %}
+                                        <span class="badge bg-success">Dispensed</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

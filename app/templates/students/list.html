@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+
+{% block title %}Students List - H2 System{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2><i class="bi bi-people"></i> Students</h2>
+    </div>
+    <div class="col-md-4 text-end">
+        {% if current_user.role in ['H2', 'Director'] %}
+        <a href="{{ url_for('students.register_student') }}" class="btn btn-primary">
+            <i class="bi bi-person-plus"></i> Register Student
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <form method="get" class="mb-3">
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Search by name or roll number..." name="search" value="{{ search }}">
+                <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i></button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Roll Number</th>
+                        <th>Name</th>
+                        <th>Blood Group</th>
+                        <th>Room</th>
+                        <th>Phone</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students.items %}
+                    <tr>
+                        <td><strong>{{ student.roll_number }}</strong></td>
+                        <td>{{ student.user.first_name }} {{ student.user.last_name }}</td>
+                        <td>{{ student.blood_group or '-' }}</td>
+                        <td>{{ student.hostel_room or '-' }}</td>
+                        <td>{{ student.phone_number or '-' }}</td>
+                        <td>
+                            <a href="{{ url_for('students.view_student', student_id=student.id) }}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{{ url_for('students.edit_student', student_id=student.id) }}" class="btn btn-sm btn-warning">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">No students found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if students.pages > 1 %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center mt-4">
+                {% if students.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('students.students_list', page=students.prev_num, search=search) }}">Previous</a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in students.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num == students.page %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('students.students_list', page=page_num, search=search) }}">{{ page_num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+                
+                {% if students.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('students.students_list', page=students.next_num, search=search) }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

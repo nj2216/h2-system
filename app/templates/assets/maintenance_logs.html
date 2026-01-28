@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Maintenance Logs{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2>All Maintenance Logs</h2>
+            
+            <form method="GET" class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label for="status" class="form-label">Filter by Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Status</option>
+                        <option value="Completed" {% if status == 'Completed' %}selected{% endif %}>Completed</option>
+                        <option value="Pending" {% if status == 'Pending' %}selected{% endif %}>Pending</option>
+                        <option value="In Progress" {% if status == 'In Progress' %}selected{% endif %}>In Progress</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <button type="submit" class="btn btn-primary mt-4">Filter</button>
+                </div>
+            </form>
+            
+            {% if logs.items %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Asset</th>
+                            <th>Issue</th>
+                            <th>Action Taken</th>
+                            <th>Cost</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs.items %}
+                        <tr>
+                            <td>{{ log.maintenance_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ log.asset.name }} ({{ log.asset.asset_code }})</td>
+                            <td>{{ log.issue_description[:50] }}...</td>
+                            <td>{{ log.action_taken[:50] }}...</td>
+                            <td>₹{{ log.cost or '0' }}</td>
+                            <td>
+                                <span class="badge bg-{% if log.status == 'Completed' %}success{% elif log.status == 'In Progress' %}warning{% else %}secondary{% endif %}">
+                                    {{ log.status }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if logs.pages > 1 %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination">
+                    {% if logs.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('assets.maintenance_logs', page=logs.prev_num, status=status) }}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in logs.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num == logs.page %}
+                            <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+                            {% else %}
+                            <li class="page-item"><a class="page-link" href="{{ url_for('assets.maintenance_logs', page=page_num, status=status) }}">{{ page_num }}</a></li>
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if logs.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('assets.maintenance_logs', page=logs.next_num, status=status) }}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <div class="alert alert-info">No maintenance logs recorded yet.</div>
+            {% endif %}
+            
+            <a href="{{ url_for('assets.assets_list') }}" class="btn btn-secondary mt-3">Back to Assets</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

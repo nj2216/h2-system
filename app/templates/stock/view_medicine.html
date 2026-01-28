@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Medicine Details{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-10">
+            <h2>{{ medicine.name }} - Stock Details</h2>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Medicine Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Name:</strong> {{ medicine.name }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Generic Name:</strong> {{ medicine.generic_name or 'N/A' }}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Dosage:</strong> {{ medicine.dosage }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Unit:</strong> {{ medicine.unit }}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Current Quantity:</strong> {{ medicine.quantity }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Min Stock Level:</strong> {{ medicine.min_stock_level }}
+                            {% if medicine.quantity <= medicine.min_stock_level %}
+                            <span class="badge bg-danger">Low Stock</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Supplier:</strong> {{ medicine.supplier or 'N/A' }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Location:</strong> {{ medicine.location or 'N/A' }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Cost Per Unit:</strong> ₹{{ medicine.cost_per_unit or '0' }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Expiry Date:</strong> {{ medicine.expiry_date or 'N/A' }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5>Adjust Stock</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('stock.adjust_stock', medicine_id=medicine.id) }}" class="needs-validation" novalidate>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label for="quantity" class="form-label">Quantity</label>
+                                <input type="number" class="form-control" id="quantity" name="quantity" required>
+                                <div class="invalid-feedback">Please provide quantity.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="movement_type" class="form-label">Movement Type</label>
+                                <select class="form-select" id="movement_type" name="movement_type" required>
+                                    <option value="">Select Type</option>
+                                    <option value="ADD">Add Stock</option>
+                                    <option value="DISPENSE">Dispense</option>
+                                    <option value="LOSS">Loss/Damage</option>
+                                </select>
+                                <div class="invalid-feedback">Please select movement type.</div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="reason" class="form-label">Reason</label>
+                                <input type="text" class="form-control" id="reason" name="reason">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Update Stock</button>
+                    </form>
+                </div>
+            </div>
+            
+            {% if movements %}
+            <div class="card">
+                <div class="card-header">
+                    <h5>Stock History</h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Quantity</th>
+                                <th>Reason</th>
+                                <th>User</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for movement in movements %}
+                            <tr>
+                                <td>{{ movement.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>{{ movement.movement_type }}</td>
+                                <td>{{ movement.quantity }}</td>
+                                <td>{{ movement.reason or 'N/A' }}</td>
+                                <td>{{ movement.user.username }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                <a href="{{ url_for('stock.inventory') }}" class="btn btn-secondary">Back</a>
+                <a href="{{ url_for('stock.edit_medicine', medicine_id=medicine.id) }}" class="btn btn-primary">Edit</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Form validation
+    (function () {
+        'use strict';
+        window.addEventListener('load', function () {
+            var forms = document.querySelectorAll('.needs-validation');
+            Array.prototype.slice.call(forms).forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+        }, false);
+    }());
+</script>
+{% endblock %}
