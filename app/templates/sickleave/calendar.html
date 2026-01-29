@@ -209,6 +209,7 @@ function renderCalendar() {
                 if (isToday) {
                     cell.classList.add('border-2', 'border-primary');
                     cell.style.backgroundColor = 'rgba(13, 110, 253, 0.05)';
+                    showDayDetails(dateStr, dayEvents);
                 }
 
                 let content = `<div class="fw-bold mb-2" style="color: var(--light-text);">${date}</div>`;

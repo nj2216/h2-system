@@ -2,9 +2,10 @@
 Flask application factory for H2 System
 """
 import os
-from flask import Flask
+from flask import Flask, redirect
 from config import config
 from .extensions import db, login_manager
+from flask import redirect, url_for
 
 
 def create_app(config_name=None):
@@ -44,9 +45,12 @@ def create_app(config_name=None):
     # Register blueprints
     register_blueprints(app)
     
-    # Create database tables
-    with app.app_context():
-        db.create_all()
+    # # Create database tables
+    # with app.app_context():
+    #     # In development, drop and recreate all tables to ensure schema matches models
+    #     if app.config.get('ENV') == 'development' or app.config.get('DEBUG', False):
+    #         db.drop_all()
+    #     db.create_all()
     
     return app
 
@@ -60,7 +64,9 @@ def register_blueprints(app):
     from app.assets.routes import assets_bp
     from app.sickleave.routes import sickleave_bp
     from app.dashboards.routes import dashboards_bp
+    from app.main.routes import main_bp
     
+    app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
     app.register_blueprint(students_bp, url_prefix='/students')
     app.register_blueprint(health_bp, url_prefix='/health')
@@ -72,14 +78,15 @@ def register_blueprints(app):
 
 def register_error_handlers(app):
     """Register error handlers"""
+    from flask import render_template
     
     @app.errorhandler(403)
     def forbidden(e):
-        return {'error': 'Forbidden', 'message': 'You do not have permission to access this resource'}, 403
+        return redirect(url_for('auth.login'))
     
     @app.errorhandler(404)
     def not_found(e):
-        return {'error': 'Not Found', 'message': 'The requested resource was not found'}, 404
+        return render_template('404.html'), 404
     
     @app.errorhandler(500)
     def internal_error(e):

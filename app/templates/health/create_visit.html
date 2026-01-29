@@ -3,69 +3,188 @@
 {% block title %}Create Doctor Visit{% endblock %}
 
 {% block content %}
+<!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<style>
+    /* Select2 Dark Theme Customization */
+    .select2-container--default .select2-selection--single {
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.375rem;
+        background-color: var(--bs-body-bg);
+        color: var(--bs-body-color);
+        min-height: 38px;
+        padding: 0.375rem 0.75rem;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: var(--bs-body-color);
+        padding-left: 0;
+    }
+
+    .select2-container--default.select2-container--focus .select2-selection--single {
+        border-color: var(--bs-primary);
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    }
+
+    .select2-dropdown {
+        background-color: var(--bs-body-bg);
+        border-color: var(--bs-border-color);
+    }
+
+    .select2-dropdown.select2-dropdown--below {
+        border-top-color: var(--bs-border-color);
+    }
+
+    .select2-results__option {
+        color: var(--bs-body-color);
+        padding: 8px 10px;
+    }
+
+    .select2-results__option--highlighted,
+    .select2-results__option[aria-selected=true] {
+        background-color: var(--bs-primary);
+        color: white;
+    }
+
+    .select2-results__group {
+        color: var(--bs-body-color);
+    }
+
+    .select2-search__field {
+        color: var(--bs-body-color);
+        background-color: var(--bs-body-bg);
+        border-color: var(--bs-border-color);
+    }
+
+    .select2-container--default .select2-search--dropdown .select2-search__field {
+        border-color: var(--bs-border-color);
+        background-color: var(--bs-body-bg);
+        color: var(--bs-body-color);
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        color: var(--bs-body-color);
+    }
+
+    .select2-container--default.select2-container {
+        width: 100% !important;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__arrow b {
+        border-color: var(--bs-body-color) transparent transparent transparent;
+    }
+
+    .select2-container--default .select2-results > .select2-results__options {
+        max-height: 400px;
+    }
+
+    .select2-results__option {
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .select2-container--default .select2-selection--single .select2-selection__placeholder {
+        color: var(--bs-secondary-color);
+    }
+</style>
+
 <div class="container mt-4">
     <div class="row">
         <div class="col-md-8 offset-md-2">
-            <h2>Create Doctor Visit</h2>
+            <h2><i class="bi bi-hospital"></i> Create Doctor Visit</h2>
             
             <form method="POST" class="needs-validation" novalidate>
                 <div class="mb-3">
-                    <label for="student_id" class="form-label">Student</label>
-                    <select class="form-select" id="student_id" name="student_id" required>
-                        <option value="">Select Student</option>
+                    <label for="student_id" class="form-label fw-600">
+                        <i class="bi bi-person-circle"></i> Student
+                        <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select select2" id="student_id" name="student_id" required>
+                        <option value="">Search by Roll Number or Name...</option>
                         {% for student in students %}
-                        <option value="{{ student.id }}">{{ student.user.username }} ({{ student.roll_number }})</option>
+                        <option value="{{ student.id }}" data-roll="{{ student.roll_number }}" data-name="{{ student.user.first_name }} {{ student.user.last_name }}">
+                            {{ student.roll_number }} – {{ student.user.username }} ({{ student.user.first_name }} {{ student.user.last_name }})
+                        </option>
                         {% endfor %}
                     </select>
                     <div class="invalid-feedback">Please select a student.</div>
                 </div>
                 
                 <div class="mb-3">
-                    <label for="doctor_id" class="form-label">Doctor</label>
-                    <select class="form-select" id="doctor_id" name="doctor_id" required>
-                        <option value="">Select Doctor</option>
+                    <label for="doctor_id" class="form-label fw-600">
+                        <i class="bi bi-person-badge"></i> Doctor
+                        <span class="text-danger">*</span>
+                    </label>
+                    <select class="form-select select2" id="doctor_id" name="doctor_id" required>
+                        <option value="">Search by Doctor Name...</option>
                         {% for doctor in doctors %}
-                        <option value="{{ doctor.id }}">{{ doctor.user.username }}</option>
+                        <option value="{{ doctor.id }}" data-name="{{ doctor.first_name }} {{ doctor.last_name }}">
+                            {{ doctor.first_name }} {{ doctor.last_name }} ({{ doctor.username }})
+                        </option>
                         {% endfor %}
                     </select>
                     <div class="invalid-feedback">Please select a doctor.</div>
                 </div>
                 
+                <hr class="my-4">
+                
                 <div class="mb-3">
-                    <label for="visit_date" class="form-label">Visit Date</label>
+                    <label for="visit_date" class="form-label fw-600">
+                        <i class="bi bi-calendar-event"></i> Visit Date
+                        <span class="text-danger">*</span>
+                    </label>
                     <input type="datetime-local" class="form-control" id="visit_date" name="visit_date" required>
                     <div class="invalid-feedback">Please provide a visit date.</div>
                 </div>
                 
                 <div class="mb-3">
-                    <label for="symptoms" class="form-label">Symptoms</label>
-                    <textarea class="form-control" id="symptoms" name="symptoms" rows="3" required></textarea>
+                    <label for="symptoms" class="form-label fw-600">
+                        <i class="bi bi-exclamation-triangle"></i> Symptoms
+                        <span class="text-danger">*</span>
+                    </label>
+                    <textarea class="form-control" id="symptoms" name="symptoms" rows="3" placeholder="Describe the patient's symptoms..." required></textarea>
                     <div class="invalid-feedback">Please describe symptoms.</div>
                 </div>
                 
                 <div class="mb-3">
-                    <label for="diagnosis" class="form-label">Diagnosis</label>
-                    <textarea class="form-control" id="diagnosis" name="diagnosis" rows="3"></textarea>
+                    <label for="diagnosis" class="form-label fw-600">
+                        <i class="bi bi-stethoscope"></i> Diagnosis
+                    </label>
+                    <textarea class="form-control" id="diagnosis" name="diagnosis" rows="3" placeholder="Medical diagnosis..."></textarea>
                 </div>
                 
                 <div class="mb-3">
-                    <label for="treatment" class="form-label">Treatment</label>
-                    <textarea class="form-control" id="treatment" name="treatment" rows="3"></textarea>
+                    <label for="treatment" class="form-label fw-600">
+                        <i class="bi bi-prescription2"></i> Treatment
+                    </label>
+                    <textarea class="form-control" id="treatment" name="treatment" rows="3" placeholder="Treatment plan..."></textarea>
                 </div>
                 
                 <div class="mb-3">
-                    <label for="notes" class="form-label">Additional Notes</label>
-                    <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                    <label for="notes" class="form-label fw-600">
+                        <i class="bi bi-chat-left-text"></i> Additional Notes
+                    </label>
+                    <textarea class="form-control" id="notes" name="notes" rows="3" placeholder="Any additional notes..."></textarea>
                 </div>
+                
+                <hr class="my-4">
                 
                 <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                    <a href="{{ url_for('health.visits_list') }}" class="btn btn-secondary">Cancel</a>
-                    <button type="submit" class="btn btn-primary">Create Visit</button>
+                    <a href="{{ url_for('health.visits_list') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-circle"></i> Create Visit
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
     // Form validation
@@ -84,5 +203,68 @@
             });
         }, false);
     }());
+
+    // Initialize Select2 on document ready
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize Select2 for searchable student dropdown
+        $('#student_id').select2({
+            placeholder: 'Search by Roll Number or Name...',
+            allowClear: false,
+            width: '100%',
+            minimumInputLength: 0,
+            matcher: function (params, data) {
+                // If no search term, return all data
+                if ($.trim(params.term) === '') {
+                    return data;
+                }
+                
+                // Skip if there's no element
+                if (!data.element) {
+                    return null;
+                }
+                
+                var term = params.term.toLowerCase();
+                var roll = $(data.element).attr('data-roll') || '';
+                var name = $(data.element).attr('data-name') || '';
+                var text = data.text.toLowerCase();
+                
+                if (roll.toLowerCase().indexOf(term) > -1 || 
+                    name.toLowerCase().indexOf(term) > -1 || 
+                    text.indexOf(term) > -1) {
+                    return data;
+                }
+                return null;
+            }
+        });
+        
+        // Initialize Select2 for searchable doctor dropdown
+        $('#doctor_id').select2({
+            placeholder: 'Search by Doctor Name...',
+            allowClear: false,
+            width: '100%',
+            minimumInputLength: 0,
+            matcher: function (params, data) {
+                // If no search term, return all data
+                if ($.trim(params.term) === '') {
+                    return data;
+                }
+                
+                // Skip if there's no element
+                if (!data.element) {
+                    return null;
+                }
+                
+                var term = params.term.toLowerCase();
+                var name = $(data.element).attr('data-name') || '';
+                var text = data.text.toLowerCase();
+                
+                if (name.toLowerCase().indexOf(term) > -1 || 
+                    text.indexOf(term) > -1) {
+                    return data;
+                }
+                return null;
+            }
+        });
+    });
 </script>
 {% endblock %}

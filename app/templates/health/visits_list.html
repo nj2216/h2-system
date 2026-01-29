@@ -32,12 +32,12 @@
                 <tbody>
                     {% for visit in visits.items %}
                     <tr>
-                        <td>{{ visit.student.user.first_name }} {{ visit.student.user.last_name }}</td>
-                        <td>{{ visit.doctor.first_name if visit.doctor else 'N/A' }}</td>
-                        <td>{{ visit.visit_date.strftime('%Y-%m-%d %H:%M') }}</td>
-                        <td>{{ visit.diagnosis[:40] if visit.diagnosis else '-' }}...</td>
-                        <td>
-                            <a href="{{ url_for('health.view_visit', visit_id=visit.id) }}" class="btn btn-sm btn-primary">View</a>
+                        <td data-label="Student">{{ visit.student.user.first_name }} {{ visit.student.user.last_name }}</td>
+                        <td data-label="Doctor">{{ visit.doctor.first_name if visit.doctor else 'N/A' }}</td>
+                        <td data-label="Date">{{ visit.visit_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td data-label="Diagnosis">{{ visit.diagnosis[:40] if visit.diagnosis else '-' }}...</td>
+                        <td data-label="Action">
+                            <a href="{{ url_for('health.view_visit', visit_id=visit.id) }}" class="btn btn-sm btn-primary"><i class="bi bi-eye"></i></a>
                         </td>
                     </tr>
                     {% else %}

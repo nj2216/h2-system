@@ -7,6 +7,8 @@ from datetime import datetime
 from ..extensions import db
 from app.models import Medicine, StockMovement
 from app.auth.utils import role_required
+import csv
+import io
 
 stock_bp = Blueprint('stock', __name__, template_folder='../templates/stock')
 
@@ -204,3 +206,163 @@ def delete_medicine(medicine_id):
     
     flash(f'Medicine {medicine_name} has been deleted.', 'success')
     return redirect(url_for('stock.inventory'))
+
+
+@stock_bp.route('/bulk-upload', methods=['GET', 'POST'])
+@role_required('H2', 'Director')
+def bulk_upload_medicines():
+    """Bulk upload medicines from CSV file for new stock arrivals"""
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('No file part in the request.', 'danger')
+            return redirect(url_for('stock.bulk_upload_medicines'))
+        
+        file = request.files['file']
+        
+        if file.filename == '':
+            flash('No selected file.', 'danger')
+            return redirect(url_for('stock.bulk_upload_medicines'))
+        
+        if not file.filename.endswith(('.csv', '.txt')):
+            flash('Please upload a CSV or TXT file.', 'danger')
+            return redirect(url_for('stock.bulk_upload_medicines'))
+        
+        try:
+            # Read file
+            stream = io.StringIO(file.read().decode('UTF-8'), newline=None)
+            csv_reader = csv.DictReader(stream)
+            
+            if not csv_reader.fieldnames:
+                flash('CSV file is empty.', 'danger')
+                return redirect(url_for('stock.bulk_upload_medicines'))
+            
+            # Expected columns: name, generic_name, dosage, quantity, min_stock_level, unit,
+            # expiry_date, supplier, cost_per_unit, location
+            required_fields = ['name', 'quantity']
+            missing_fields = [field for field in required_fields if field not in csv_reader.fieldnames]
+            
+            if missing_fields:
+                flash(f'Missing required columns: {", ".join(missing_fields)}', 'danger')
+                return redirect(url_for('stock.bulk_upload_medicines'))
+            
+            created = 0
+            updated = 0
+            errors = []
+            
+            for row_num, row in enumerate(csv_reader, start=2):  # Start at 2 (after header)
+                try:
+                    name = row.get('name', '').strip()
+                    quantity = row.get('quantity', '').strip()
+                    
+                    if not name or not quantity:
+                        errors.append(f'Row {row_num}: Missing name or quantity')
+                        continue
+                    
+                    try:
+                        quantity = int(quantity)
+                    except ValueError:
+                        errors.append(f'Row {row_num}: Quantity must be a number')
+                        continue
+                    
+                    if quantity <= 0:
+                        errors.append(f'Row {row_num}: Quantity must be greater than 0')
+                        continue
+                    
+                    # Check if medicine exists
+                    medicine = Medicine.query.filter_by(name=name).first()
+                    
+                    if medicine:
+                        # Update existing medicine
+                        old_quantity = medicine.quantity
+                        medicine.quantity += quantity
+                        
+                        # Update optional fields if provided
+                        if row.get('generic_name', '').strip():
+                            medicine.generic_name = row.get('generic_name').strip()
+                        if row.get('dosage', '').strip():
+                            medicine.dosage = row.get('dosage').strip()
+                        if row.get('min_stock_level', '').strip():
+                            try:
+                                medicine.min_stock_level = int(row.get('min_stock_level').strip())
+                            except ValueError:
+                                pass
+                        if row.get('unit', '').strip():
+                            medicine.unit = row.get('unit').strip()
+                        if row.get('supplier', '').strip():
+                            medicine.supplier = row.get('supplier').strip()
+                        if row.get('cost_per_unit', '').strip():
+                            try:
+                                medicine.cost_per_unit = float(row.get('cost_per_unit').strip())
+                            except ValueError:
+                                pass
+                        if row.get('location', '').strip():
+                            medicine.location = row.get('location').strip()
+                        
+                        # Parse expiry date if provided
+                        if row.get('expiry_date', '').strip():
+                            try:
+                                medicine.expiry_date = datetime.strptime(row.get('expiry_date'), '%Y-%m-%d').date()
+                            except ValueError:
+                                errors.append(f'Row {row_num}: Invalid date format for expiry_date')
+                                continue
+                        
+                        db.session.flush()
+                        updated += 1
+                        
+                    else:
+                        # Create new medicine
+                        medicine = Medicine(
+                            name=name,
+                            generic_name=row.get('generic_name', '').strip(),
+                            dosage=row.get('dosage', '').strip(),
+                            quantity=quantity,
+                            min_stock_level=int(row.get('min_stock_level', 10)) if row.get('min_stock_level', '').strip() else 10,
+                            unit=row.get('unit', '').strip() or 'units',
+                            supplier=row.get('supplier', '').strip(),
+                            cost_per_unit=float(row.get('cost_per_unit', 0)) if row.get('cost_per_unit', '').strip() else None,
+                            location=row.get('location', '').strip()
+                        )
+                        
+                        # Parse expiry date if provided
+                        if row.get('expiry_date', '').strip():
+                            try:
+                                medicine.expiry_date = datetime.strptime(row.get('expiry_date'), '%Y-%m-%d').date()
+                            except ValueError:
+                                errors.append(f'Row {row_num}: Invalid date format for expiry_date')
+                                continue
+                        
+                        db.session.add(medicine)
+                        db.session.flush()
+                        created += 1
+                    
+                    # Record stock movement for new arrivals
+                    movement = StockMovement(
+                        medicine_id=medicine.id,
+                        user_id=current_user.id,
+                        movement_type='ADD',
+                        quantity=quantity,
+                        reason='Bulk stock arrival'
+                    )
+                    db.session.add(movement)
+                
+                except Exception as e:
+                    errors.append(f'Row {row_num}: {str(e)}')
+            
+            # Commit all successful entries
+            if created > 0 or updated > 0:
+                db.session.commit()
+                flash(f'Successfully created {created} new medicine(s) and updated {updated} existing medicine(s).', 'success')
+            
+            if errors:
+                error_msg = '<br>'.join(errors[:10])  # Show first 10 errors
+                if len(errors) > 10:
+                    error_msg += f'<br>... and {len(errors) - 10} more errors'
+                flash(f'Encountered {len(errors)} error(s):<br>{error_msg}', 'warning')
+            
+            return redirect(url_for('stock.inventory'))
+        
+        except Exception as e:
+            flash(f'Error processing file: {str(e)}', 'danger')
+            return redirect(url_for('stock.bulk_upload_medicines'))
+    
+    return render_template('stock/bulk_upload.html')

@@ -35,20 +35,20 @@
                 <tbody>
                     {% for request in requests.items %}
                     <tr>
-                        <td>{{ request.student.user.first_name }} {{ request.student.user.last_name }}</td>
-                        <td>
+                        <td data-label="Student">{{ request.student.user.first_name }} {{ request.student.user.last_name }}</td>
+                        <td data-label="Type">
                             {% if request.request_type == 'sick_leave' %}
                                 <span class="badge bg-info">Sick Leave</span>
                             {% else %}
                                 <span class="badge bg-success">Sick Food</span>
                             {% endif %}
                         </td>
-                        <td>{{ request.start_date }} to {{ request.end_date }}</td>
-                        <td>
+                        <td data-label="Date Range">{{ request.start_date }} to {{ request.end_date }}</td>
+                        <td data-label="Status">
                             <span class="badge" data-status="{{ request.overall_status }}">{{ request.overall_status }}</span>
                         </td>
-                        <td>
-                            <a href="{{ url_for('sickleave.view_request', request_id=request.id) }}" class="btn btn-sm btn-primary">View</a>
+                        <td data-label="Action">
+                            <a href="{{ url_for('sickleave.view_request', request_id=request.id) }}" class="btn btn-sm btn-primary"><i class="bi bi-eye"></i></a>
                         </td>
                     </tr>
                     {% else %}

@@ -7,11 +7,16 @@
     <div class="col-md-8">
         <h2><i class="bi bi-people"></i> Students</h2>
     </div>
-    <div class="col-md-4 text-end">
+    <div class="col-md-4">
         {% if current_user.role in ['H2', 'Director'] %}
-        <a href="{{ url_for('students.register_student') }}" class="btn btn-primary">
-            <i class="bi bi-person-plus"></i> Register Student
-        </a>
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            <a href="{{ url_for('students.register_student') }}" class="btn btn-primary btn-sm">
+                <i class="bi bi-person-plus"></i> Register
+            </a>
+            <a href="{{ url_for('students.bulk_upload_students') }}" class="btn btn-info btn-sm">
+                <i class="bi bi-cloud-upload"></i> Upload
+            </a>
+        </div>
         {% endif %}
     </div>
 </div>
@@ -44,12 +49,12 @@
                 <tbody>
                     {% for student in students.items %}
                     <tr>
-                        <td><strong>{{ student.roll_number }}</strong></td>
-                        <td>{{ student.user.first_name }} {{ student.user.last_name }}</td>
-                        <td>{{ student.blood_group or '-' }}</td>
-                        <td>{{ student.hostel_room or '-' }}</td>
-                        <td>{{ student.phone_number or '-' }}</td>
-                        <td>
+                        <td data-label="Roll"><strong>{{ student.roll_number }}</strong></td>
+                        <td data-label="Name">{{ student.user.first_name }} {{ student.user.last_name }}</td>
+                        <td data-label="Blood Group">{{ student.blood_group or '-' }}</td>
+                        <td data-label="Room">{{ student.hostel_room or '-' }}</td>
+                        <td data-label="Phone">{{ student.phone_number or '-' }}</td>
+                        <td data-label="Actions">
                             <a href="{{ url_for('students.view_student', student_id=student.id) }}" class="btn btn-sm btn-primary">
                                 <i class="bi bi-eye"></i>
                             </a>

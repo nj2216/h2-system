@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk Upload Medicine Stock{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Bulk Upload Medicine Stock (New Arrivals)</h5>
+                </div>
+                
+                <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <strong>Instructions:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Upload a CSV file with medicine stock data</li>
+                            <li>Required columns: <code>name</code>, <code>quantity</code></li>
+                            <li>Optional columns: <code>generic_name</code>, <code>dosage</code>, <code>min_stock_level</code>, <code>unit</code>, <code>expiry_date</code> (YYYY-MM-DD), <code>supplier</code>, <code>cost_per_unit</code>, <code>location</code></li>
+                            <li>If medicine already exists, quantity will be added to existing stock</li>
+                            <li>If medicine doesn't exist, it will be created</li>
+                        </ul>
+                    </div>
+
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="file" class="form-label">Select CSV File</label>
+                            <input type="file" class="form-control" id="file" name="file" accept=".csv,.txt" required>
+                            <small class="form-text text-muted">Accepted formats: CSV, TXT</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-cloud-upload"></i> Upload Medicine Stock
+                        </button>
+                        <a href="{{ url_for('stock.inventory') }}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Inventory
+                        </a>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Sample CSV Format:</h6>
+                            <pre class="bg-light p-3 rounded" style="font-size: 12px;">name,generic_name,dosage,quantity,min_stock_level,unit,expiry_date,supplier,cost_per_unit,location
+Paracetamol,Paracetamol,500mg,100,20,tablets,2025-12-31,Pharma Co,5.50,Shelf A1
+Ibuprofen,Ibuprofen,200mg,50,15,tablets,2025-11-30,Pharma Co,8.00,Shelf A2
+Amoxicillin,Amoxicillin,250mg,30,10,capsules,2025-10-15,MedSupply,12.00,Shelf B1</pre>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6>Download Template:</h6>
+                            <p>
+                                <a href="#" onclick="downloadTemplate()" class="btn btn-outline-secondary btn-sm">
+                                    <i class="bi bi-download"></i> Download CSV Template
+                                </a>
+                            </p>
+
+                            <h6 class="mt-4">Features:</h6>
+                            <ul style="font-size: 14px;">
+                                <li>Validates quantity as positive integer</li>
+                                <li>Creates new medicines automatically</li>
+                                <li>Adds to existing medicine stock</li>
+                                <li>Records stock movements in audit trail</li>
+                                <li>Updates expiry dates and supplier info</li>
+                                <li>Detailed error reporting</li>
+                                <li>Batch processing with transaction support</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function downloadTemplate() {
+    const csv = `name,generic_name,dosage,quantity,min_stock_level,unit,expiry_date,supplier,cost_per_unit,location
+Paracetamol,Paracetamol,500mg,100,20,tablets,2025-12-31,Pharma Co,5.50,Shelf A1
+Ibuprofen,Ibuprofen,200mg,50,15,tablets,2025-11-30,Pharma Co,8.00,Shelf A2
+Amoxicillin,Amoxicillin,250mg,30,10,capsules,2025-10-15,MedSupply,12.00,Shelf B1
+Aspirin,Acetylsalicylic Acid,100mg,200,30,tablets,2025-09-20,Pharma Co,3.00,Shelf A3
+Metformin,Metformin,500mg,75,25,tablets,2025-08-10,MedSupply,6.50,Shelf B2`;
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'medicine_stock_template.csv';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+}
+</script>
+{% endblock %}

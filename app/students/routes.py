@@ -7,6 +7,8 @@ from datetime import datetime
 from ..extensions import db
 from app.models import Student, User
 from app.auth.utils import role_required
+import csv
+import io
 
 students_bp = Blueprint('students', __name__, template_folder='../templates/students')
 
@@ -187,3 +189,131 @@ def health_history(student_id):
                           student=student,
                           doctor_visits=doctor_visits,
                           prescriptions=prescriptions)
+
+
+@students_bp.route('/bulk-upload', methods=['GET', 'POST'])
+@role_required('H2', 'Director')
+def bulk_upload_students():
+    """Bulk upload students from CSV file"""
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('No file part in the request.', 'danger')
+            return redirect(url_for('students.bulk_upload_students'))
+        
+        file = request.files['file']
+        
+        if file.filename == '':
+            flash('No selected file.', 'danger')
+            return redirect(url_for('students.bulk_upload_students'))
+        
+        if not file.filename.endswith(('.csv', '.txt')):
+            flash('Please upload a CSV or TXT file.', 'danger')
+            return redirect(url_for('students.bulk_upload_students'))
+        
+        try:
+            # Read file
+            stream = io.StringIO(file.read().decode('UTF-8'), newline=None)
+            csv_reader = csv.DictReader(stream)
+            
+            if not csv_reader.fieldnames:
+                flash('CSV file is empty.', 'danger')
+                return redirect(url_for('students.bulk_upload_students'))
+            
+            # Expected columns: username, email, password, first_name, last_name, roll_number, 
+            # date_of_birth, gender, blood_group, hostel_room, phone_number, emergency_contact_name,
+            # emergency_contact_phone, emergency_contact_relation
+            required_fields = ['username', 'email', 'password', 'first_name', 'last_name', 'roll_number']
+            missing_fields = [field for field in required_fields if field not in csv_reader.fieldnames]
+            
+            if missing_fields:
+                flash(f'Missing required columns: {", ".join(missing_fields)}', 'danger')
+                return redirect(url_for('students.bulk_upload_students'))
+            
+            created = 0
+            errors = []
+            
+            for row_num, row in enumerate(csv_reader, start=2):  # Start at 2 (after header)
+                try:
+                    username = row.get('username', '').strip()
+                    email = row.get('email', '').strip()
+                    password = row.get('password', '').strip()
+                    first_name = row.get('first_name', '').strip()
+                    last_name = row.get('last_name', '').strip()
+                    roll_number = row.get('roll_number', '').strip()
+                    
+                    if not all([username, email, password, first_name, last_name, roll_number]):
+                        errors.append(f'Row {row_num}: Missing required fields')
+                        continue
+                    
+                    # Check for duplicates
+                    if User.query.filter_by(username=username).first():
+                        errors.append(f'Row {row_num}: Username "{username}" already exists')
+                        continue
+                    
+                    if User.query.filter_by(email=email).first():
+                        errors.append(f'Row {row_num}: Email "{email}" already exists')
+                        continue
+                    
+                    if Student.query.filter_by(roll_number=roll_number).first():
+                        errors.append(f'Row {row_num}: Roll number "{roll_number}" already exists')
+                        continue
+                    
+                    # Parse optional date
+                    dob = None
+                    if row.get('date_of_birth', '').strip():
+                        try:
+                            dob = datetime.strptime(row.get('date_of_birth'), '%Y-%m-%d').date()
+                        except ValueError:
+                            errors.append(f'Row {row_num}: Invalid date format for DOB')
+                            continue
+                    
+                    # Create user
+                    user = User(
+                        username=username,
+                        email=email,
+                        first_name=first_name,
+                        last_name=last_name,
+                        role='Student'
+                    )
+                    user.set_password(password)
+                    db.session.add(user)
+                    db.session.flush()
+                    
+                    # Create student profile
+                    student = Student(
+                        user_id=user.id,
+                        roll_number=roll_number,
+                        date_of_birth=dob,
+                        gender=row.get('gender', '').strip(),
+                        blood_group=row.get('blood_group', '').strip(),
+                        hostel_room=row.get('hostel_room', '').strip(),
+                        phone_number=row.get('phone_number', '').strip(),
+                        emergency_contact_name=row.get('emergency_contact_name', '').strip(),
+                        emergency_contact_phone=row.get('emergency_contact_phone', '').strip(),
+                        emergency_contact_relation=row.get('emergency_contact_relation', '').strip()
+                    )
+                    
+                    db.session.add(student)
+                    created += 1
+                
+                except Exception as e:
+                    errors.append(f'Row {row_num}: {str(e)}')
+            
+            # Commit all successful entries
+            if created > 0:
+                db.session.commit()
+                flash(f'Successfully created {created} student(s).', 'success')
+            
+            if errors:
+                error_msg = '<br>'.join(errors[:10])  # Show first 10 errors
+                if len(errors) > 10:
+                    error_msg += f'<br>... and {len(errors) - 10} more errors'
+                flash(f'Encountered {len(errors)} error(s):<br>{error_msg}', 'warning')
+            
+            return redirect(url_for('students.students_list'))
+        
+        except Exception as e:
+            flash(f'Error processing file: {str(e)}', 'danger')
+            return redirect(url_for('students.bulk_upload_students'))
+    
+    return render_template('students/bulk_upload.html')

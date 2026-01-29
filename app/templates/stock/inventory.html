@@ -12,6 +12,9 @@
         <a href="{{ url_for('stock.add_medicine') }}" class="btn btn-primary">
             <i class="bi bi-plus-circle"></i> Add Medicine
         </a>
+        <a href="{{ url_for('stock.bulk_upload_medicines') }}" class="btn btn-success">
+            <i class="bi bi-cloud-upload"></i> Bulk Upload
+        </a>
         {% endif %}
         <a href="{{ url_for('stock.low_stock_alerts') }}" class="btn btn-warning">
             <i class="bi bi-exclamation-triangle"></i> Low Stock
@@ -51,19 +54,19 @@
                 <tbody>
                     {% for medicine in medicines.items %}
                     <tr>
-                        <td><strong>{{ medicine.name }}</strong></td>
-                        <td>{{ medicine.dosage }}</td>
-                        <td>{{ medicine.quantity }}</td>
-                        <td>{{ medicine.min_stock_level }}</td>
-                        <td>
+                        <td data-label="Name"><strong>{{ medicine.name }}</strong></td>
+                        <td data-label="Dosage">{{ medicine.dosage }}</td>
+                        <td data-label="Stock">{{ medicine.quantity }}</td>
+                        <td data-label="Min Level">{{ medicine.min_stock_level }}</td>
+                        <td data-label="Status">
                             {% if medicine.is_low_stock %}
                                 <span class="badge bg-danger">Low Stock</span>
                             {% else %}
                                 <span class="badge bg-success">OK</span>
                             {% endif %}
                         </td>
-                        <td>
-                            <a href="{{ url_for('stock.view_medicine', medicine_id=medicine.id) }}" class="btn btn-sm btn-primary">View</a>
+                        <td data-label="Action">
+                            <a href="{{ url_for('stock.view_medicine', medicine_id=medicine.id) }}" class="btn btn-sm btn-primary"><i class="bi bi-eye"></i></a>
                         </td>
                     </tr>
                     {% else %}
@@ -74,6 +77,39 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Pagination -->
+        {% if medicines.pages > 1 %}
+        <nav aria-label="Page navigation">
+            <ul class="pagination justify-content-center mt-4">
+                {% if medicines.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('stock.inventory', page=medicines.prev_num, search=search, low_stock=show_low) }}">Previous</a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in medicines.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num == medicines.page %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('stock.inventory', page=page_num, search=search, low_stock=show_low) }}">{{ page_num }}</a>
+                        </li>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+                
+                {% if medicines.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('stock.inventory', page=medicines.next_num, search=search, low_stock=show_low) }}">Next</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

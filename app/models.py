@@ -113,6 +113,7 @@ class Prescription(db.Model):
     dosage = db.Column(db.String(100))  # e.g., "500mg"
     frequency = db.Column(db.String(100))  # e.g., "3 times daily"
     duration_days = db.Column(db.Integer)
+    quantity_prescribed = db.Column(db.Integer, default=1)  # Number of units prescribed
     instructions = db.Column(db.Text)
     is_dispensed = db.Column(db.Boolean, default=False)
     dispensed_date = db.Column(db.DateTime)

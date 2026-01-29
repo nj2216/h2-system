@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk Upload Students{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Bulk Upload Students</h5>
+                </div>
+                
+                <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <strong>Instructions:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Upload a CSV file with student data</li>
+                            <li>Required columns: <code>username</code>, <code>email</code>, <code>password</code>, <code>first_name</code>, <code>last_name</code>, <code>roll_number</code></li>
+                            <li>Optional columns: <code>date_of_birth</code> (YYYY-MM-DD), <code>gender</code>, <code>blood_group</code>, <code>hostel_room</code>, <code>phone_number</code>, <code>emergency_contact_name</code>, <code>emergency_contact_phone</code>, <code>emergency_contact_relation</code></li>
+                        </ul>
+                    </div>
+
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="file" class="form-label">Select CSV File</label>
+                            <input type="file" class="form-control" id="file" name="file" accept=".csv,.txt" required>
+                            <small class="form-text text-muted">Accepted formats: CSV, TXT</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-cloud-upload"></i> Upload Students
+                        </button>
+                        <a href="{{ url_for('students.students_list') }}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Students
+                        </a>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Sample CSV Format:</h6>
+                            <pre class="bg-light p-3 rounded" style="font-size: 12px;">username,email,password,first_name,last_name,roll_number,date_of_birth,gender,blood_group,hostel_room,phone_number
+john_doe,john@example.com,pass123,John,Doe,CSE001,2002-05-15,M,O+,A-101,9876543210
+jane_smith,jane@example.com,pass456,Jane,Smith,CSE002,2003-08-20,F,AB+,A-102,9876543211</pre>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6>Download Template:</h6>
+                            <p>
+                                <a href="#" onclick="downloadTemplate()" class="btn btn-outline-secondary btn-sm">
+                                    <i class="bi bi-download"></i> Download CSV Template
+                                </a>
+                            </p>
+
+                            <h6 class="mt-4">Features:</h6>
+                            <ul style="font-size: 14px;">
+                                <li>Validates all required fields</li>
+                                <li>Checks for duplicate usernames, emails, roll numbers</li>
+                                <li>Supports optional fields</li>
+                                <li>Detailed error reporting</li>
+                                <li>Automatic password hashing</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function downloadTemplate() {
+    const csv = `username,email,password,first_name,last_name,roll_number,date_of_birth,gender,blood_group,hostel_room,phone_number,emergency_contact_name,emergency_contact_phone,emergency_contact_relation
+john_doe,john@example.com,password123,John,Doe,CSE001,2002-05-15,M,O+,A-101,9876543210,Parent Name,9876543200,Father
+jane_smith,jane@example.com,password456,Jane,Smith,CSE002,2003-08-20,F,AB+,A-102,9876543211,Parent Name,9876543201,Mother`;
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'students_template.csv';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+}
+</script>
+{% endblock %}

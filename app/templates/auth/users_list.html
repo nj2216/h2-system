@@ -31,20 +31,20 @@
                 <tbody>
                     {% for user in users.items %}
                     <tr>
-                        <td><strong>{{ user.username }}</strong></td>
-                        <td>{{ user.first_name }} {{ user.last_name }}</td>
-                        <td>{{ user.email }}</td>
-                        <td>
+                        <td data-label="Username"><strong>{{ user.username }}</strong></td>
+                        <td data-label="Name">{{ user.first_name }} {{ user.last_name }}</td>
+                        <td data-label="Email">{{ user.email }}</td>
+                        <td data-label="Role">
                             <span class="badge bg-info">{{ user.role }}</span>
                         </td>
-                        <td>
+                        <td data-label="Status">
                             {% if user.is_active %}
                                 <span class="badge bg-success">Active</span>
                             {% else %}
                                 <span class="badge bg-danger">Inactive</span>
                             {% endif %}
                         </td>
-                        <td>
+                        <td data-label="Actions">
                             <a href="{{ url_for('auth.edit_user', user_id=user.id) }}" class="btn btn-sm btn-primary">
                                 <i class="bi bi-pencil"></i>
                             </a>

@@ -1,0 +1,619 @@
+{% extends "base.html" %}
+
+{% block title %}H2 System - Health & Hostel Management{% endblock %}
+
+{% set team_structure = {
+    "levels": [
+        {
+            "level": 1,
+            "members": [
+                {
+                    "name": "Dr. Devsen-Kruthiventi",
+                    "position": "Department Head, Hostel Warden",
+                    "icon": "person-fill",
+                    "image": "static/images/team/warden.jpg",
+                    "gradient": "linear-gradient(135deg, var(--primary-color) 0%, var(--info-color) 100%)"
+                }
+            ]
+        },
+        {
+            "level": 2,
+            "members": [
+                {
+                    "name": "Prajwal",
+                    "position": "Hostel Nurse",
+                    "icon": "person-fill",
+                    "image": "/static/images/team/prajwal.jpg",
+                    "gradient": "linear-gradient(135deg, var(--warning-color) 0%, var(--info-color) 100%)"
+                }
+            ]
+        },
+        {
+            "level": 3,
+            "members": [
+                {
+                    "name": "Tushar Sharma",
+                    "position": "Student Head",
+                    "icon": "person-fill",
+                    "image": "/static/images/team/tushar.jpg",
+                    "gradient": "linear-gradient(135deg, var(--info-color) 0%, #06b6d4 100%)"
+                }
+            ]
+        },
+        {
+            "level": 4,
+            "members": [
+                {
+                    "name": "Gowtham Jegathesan",
+                    "position": "III B.S.",
+                    "icon": "person-fill",
+                    "image": "/static/images/team/234213.jpg",
+                    "gradient": "linear-gradient(135deg, var(--success-color) 0%, #22c55e 100%)"
+                },
+                {
+                    "name": "Ayoush Subba",
+                    "position": "III B.S.",
+                    "icon": "person-fill",
+                    "image": "/static/images/team/ayoush.jpg",
+                    "gradient": "linear-gradient(135deg, #d946ef 0%, var(--danger-color) 100%)"
+                },
+                {
+                    "name": "Prajal Bhattarai",
+                    "position": "III B.S.",
+                    "icon": "person-fill",
+                    "image": "/static/images/team/prajal.jpg",
+                    "gradient": "linear-gradient(135deg, var(--success-color) 0%, #10b981 100%)"
+                }
+            ]
+        },
+        {
+            "level": 5,
+            "members": [
+                {
+                    "name": "Narendra",
+                    "position": "II B.S.",
+                    "icon": "person-fill",
+                    "image": "/static/images/team/narendra.jpg",
+                    "gradient": "linear-gradient(135deg, var(--primary-color) 0%, #3b82f6 100%)"
+                },
+                {
+                    "name": "Sumit",
+                    "position": "II B.S.",
+                    "icon": "person-fill",
+                    "image": "/static/images/team/sumit.jpg",
+                    "gradient": "linear-gradient(135deg, var(--info-color) 0%, #0ea5e9 100%)"
+                },
+                {
+                    "name": "Anirud",
+                    "position": "II B.S.",
+                    "icon": "person-fill",
+                    "image": "/static/images/team/anirud.jpg",
+                    "gradient": "linear-gradient(135deg, var(--warning-color) 0%, #f59e0b 100%)"
+                },
+                {
+                    "name": "Samyog",
+                    "position": "II B.A.",
+                    "icon": "person-fill",
+                    "image": "/static/images/team/samyog.jpg",
+                    "gradient": "linear-gradient(135deg, var(--danger-color) 0%, #ef4444 100%)"
+                }
+            ]
+        }
+    ]
+} %}
+
+
+{% block extra_css %}
+<style>
+    .hero-section {
+        background: linear-gradient(135deg, #0d6efd 0%, #0891b2 100%);
+        color: white;
+        padding: 4rem 0;
+        margin-bottom: 3rem;
+    }
+    
+    [data-bs-theme="dark"] .hero-section {
+        background: linear-gradient(135deg, #1e3a8a 0%, #0c4a6e 100%);
+    }
+    
+    .about-section {
+        background-color: var(--light-muted);
+        padding: 4rem 0;
+        margin-bottom: 3rem;
+    }
+    
+    .team-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        color: white;
+        font-size: 2.5rem;
+    }
+    
+    .contact-section {
+        background: linear-gradient(135deg, var(--light-muted) 0%, var(--light-bg) 100%);
+        padding: 3rem 0;
+        border-top: 1px solid var(--light-border);
+    }
+    
+    .stat-box {
+        background-color: rgba(13, 110, 253, 0.1);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        text-align: center;
+    }
+    
+    [data-bs-theme="dark"] .stat-box {
+        background-color: rgba(30, 58, 138, 0.2);
+    }
+    
+    .stat-box.success {
+        background-color: rgba(5, 150, 105, 0.1);
+    }
+    
+    [data-bs-theme="dark"] .stat-box.success {
+        background-color: rgba(6, 78, 59, 0.2);
+    }
+    
+    .stat-box.info {
+        background-color: rgba(8, 145, 178, 0.1);
+    }
+    
+    [data-bs-theme="dark"] .stat-box.info {
+        background-color: rgba(6, 78, 89, 0.2);
+    }
+    
+    .stat-box.warning {
+        background-color: rgba(217, 119, 6, 0.1);
+    }
+    
+    [data-bs-theme="dark"] .stat-box.warning {
+        background-color: rgba(120, 53, 15, 0.2);
+    }
+    
+    /* Organizational Tree Styles */
+    .org-chart {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1.5rem;
+    }
+    
+    .org-level {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 2rem;
+        position: relative;
+        width: 100%;
+        flex-wrap: wrap;
+    }
+    
+    .org-level-1 {
+        margin-bottom: 2rem;
+    }
+    
+    .org-level-2 {
+        margin-bottom: 2rem;
+    }
+    
+    .org-level-3 {
+        margin-bottom: 1.5rem;
+    }
+    
+    .org-level-4 {
+        margin-bottom: 1.5rem;
+    }
+    
+    .org-level-5 {
+        margin-bottom: 1.5rem;
+    }
+    
+    .team-member-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        z-index: 10;
+    }
+    
+    .team-card {
+        background: white;
+        border: 2px solid var(--light-border);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        width: 220px;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    [data-bs-theme="dark"] .team-card {
+        background: var(--light-bg);
+        border-color: var(--light-border);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    .team-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    [data-bs-theme="dark"] .team-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+    
+    .team-card-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1rem;
+        color: white;
+        font-size: 2.5rem;
+        background-size: cover;
+        background-position: center;
+        overflow: hidden;
+        border: 3px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .team-card-avatar-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .team-card-avatar-icon {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .team-card-name {
+        font-weight: 600;
+        font-size: 1rem;
+        color: var(--light-text);
+        margin-bottom: 0.25rem;
+    }
+    
+    .team-card-position {
+        font-size: 0.85rem;
+        color: var(--secondary-color);
+        font-weight: 500;
+    }
+    
+    .team-member-badge {
+        text-align: center;
+        background: white;
+        border: 2px solid var(--light-border);
+        border-radius: 0.5rem;
+        padding: 0.5rem 1.5rem;
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: var(--primary-color);
+        margin-top: 0.5rem;
+        white-space: nowrap;
+    }
+    
+    [data-bs-theme="dark"] .team-member-badge {
+        background: var(--light-bg);
+        border-color: var(--light-border);
+        color: var(--light-text);
+    }
+    
+    .tree-connector {
+        position: absolute;
+        background: var(--light-border);
+        display: none;
+    }
+    
+    [data-bs-theme="dark"] .tree-connector {
+        background: var(--light-border);
+        display: none;
+    }
+    
+    .tree-connector-vertical {
+        width: 2px;
+        height: 2rem;
+        left: 50%;
+        top: -2rem;
+        transform: translateX(-50%);
+        display: none;
+    }
+    
+    .tree-connector-horizontal {
+        height: 2px;
+        top: -2rem;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .org-level {
+            gap: 1rem;
+        }
+        
+        .team-card {
+            width: 180px;
+            padding: 1rem;
+        }
+        
+        .team-card-avatar {
+            width: 70px;
+            height: 70px;
+            font-size: 1.8rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .team-card-name {
+            font-size: 0.9rem;
+        }
+        
+        .team-card-position {
+            font-size: 0.75rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="display-3 fw-bold mb-3">
+                    <i class="bi bi-hospital"></i> H2 System
+                </h1>
+                <h2 class="fs-4 mb-3 opacity-90">Health & Hostel Management System</h2>
+                <p class="lead mb-4">
+                    A comprehensive platform for managing student health records, hostel operations, medicine inventory, and administrative tasks with integrated health and wellness features.
+                </p>
+                {% if not current_user.is_authenticated %}
+                <div class="d-flex gap-3">
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-light btn-lg px-4">
+                        <i class="bi bi-box-arrow-in-right"></i> Login
+                    </a>
+                    <!-- <a href="{{ url_for('auth.register') }}" class="btn btn-outline-light btn-lg px-4">
+                        <i class="bi bi-person-plus"></i> Register
+                    </a> -->
+                </div>
+                {% else %}
+                <a href="{{ url_for('dashboards.dashboard') }}" class="btn btn-light btn-lg px-4">
+                    <i class="bi bi-speedometer2"></i> Go to Dashboard
+                </a>
+                {% endif %}
+            </div>
+            <div class="col-md-4 text-center">
+                <i class="bi bi-hospital" style="font-size: 10rem; opacity: 0.9;"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="container mb-5">
+    <h2 class="text-center mb-4 fw-bold">Key Features</h2>
+    <div class="row g-4">
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-person-badge" style="font-size: 2.5rem; color: var(--primary-color);"></i>
+                    <h5 class="card-title mt-3">Student Health Records</h5>
+                    <p class="card-text text-muted">
+                        Maintain detailed records of students, ailments, medicines administered, and treatment history as documented in the official record book.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-heart-pulse" style="font-size: 2.5rem; color: var(--success-color);"></i>
+                    <h5 class="card-title mt-3">Doctor Services</h5>
+                    <p class="card-text text-muted">
+                        Facilitate doctor visits to hostels, assist medical consultations, and ensure prescribed treatment is followed accurately.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-capsule" style="font-size: 2.5rem; color: var(--info-color);"></i>
+                    <h5 class="card-title mt-3">Medicine Management</h5>
+                    <p class="card-text text-muted">
+                        Administer medicines strictly as prescribed, avoid wastage, and monitor stock levels and expiry dates periodically.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-calendar2-event" style="font-size: 2.5rem; color: var(--warning-color);"></i>
+                    <h5 class="card-title mt-3">Sick Leave Processing</h5>
+                    <p class="card-text text-muted">
+                        Issue sick leaves only after due permission from the warden and department in-charge, ensuring proper documentation.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-boxes" style="font-size: 2.5rem; color: var(--danger-color);"></i>
+                    <h5 class="card-title mt-3">Equipment & Asset Maintenance</h5>
+                    <p class="card-text text-muted">
+                        Ensure cleanliness, maintenance of medical equipment, and readiness of first-aid and emergency supplies.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center">
+                    <i class="bi bi-shield-lock" style="font-size: 2.5rem; color: #6b7280;"></i>
+                    <h5 class="card-title mt-3">Duty & Discipline</h5>
+                    <p class="card-text text-muted">
+                        Emphasizes punctuality, cleanliness, proper record keeping, and service-oriented discipline within the department.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- About Department Section -->
+<div style="background-color: var(--light-muted); padding: 4rem 0; margin-bottom: 3rem;">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6 mb-4 mb-md-0">
+                <h2 class="fw-bold mb-3">About H2 Department</h2>
+
+                <p class="lead text-muted mb-3">
+                    OM SRI SAI RAM. The H2 (Health & Hostel) Department functions with the spirit of service, providing 24/7 healthcare support to hostel inmates.
+                </p>
+
+                <p class="mb-3">
+                    The primary objective of the department is to ensure that hostel inmates are always healthy — physically and mentally — through organized medical care and disciplined service.
+                </p>
+
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle-fill" style="color: var(--success-color);"></i>
+                        <strong>Medical Care:</strong> First aid for injuries, regular doctor consultations, and medicine administration as prescribed
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle-fill" style="color: var(--success-color);"></i>
+                        <strong>Care for Sick Students:</strong> Continuous monitoring of sick inmates and coordination of dietary and medical needs
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle-fill" style="color: var(--success-color);"></i>
+                        <strong>Leave Authorization:</strong> Issuing sick leaves only with due permission from the warden and department in charge
+                    </li>
+                    <li class="mb-2">
+                        <i class="bi bi-check-circle-fill" style="color: var(--success-color);"></i>
+                        <strong>Records & Stockkeeping:</strong> Maintaining medicine record books, stocktaking, and expiry monitoring
+                    </li>
+                </ul>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card border-0 shadow-lg">
+                    <div class="card-body p-4">
+                        <h5 class="card-title fw-bold mb-3">Department Highlights</h5>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div class="text-center p-3" style="background-color: rgba(13, 110, 253, 0.1); border-radius: 0.5rem;">
+                                    <h3 class="fw-bold" style="color: var(--primary-color);">24/7</h3>
+                                    <p class="text-muted small">Health Service</p>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center p-3" style="background-color: rgba(5, 150, 105, 0.1); border-radius: 0.5rem;">
+                                    <h3 class="fw-bold" style="color: var(--success-color);">100+</h3>
+                                    <p class="text-muted small">Medicines Tracked</p>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center p-3" style="background-color: rgba(8, 145, 178, 0.1); border-radius: 0.5rem;">
+                                    <h3 class="fw-bold" style="color: var(--info-color);">Dedicated</h3>
+                                    <p class="text-muted small">Service Team</p>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center p-3" style="background-color: rgba(217, 119, 6, 0.1); border-radius: 0.5rem;">
+                                    <h3 class="fw-bold" style="color: var(--warning-color);">Disciplined</h3>
+                                    <p class="text-muted small">Operations</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<!-- H2 Team Members Section -->
+<div class="container mb-5">
+    <h2 class="text-center mb-5 fw-bold">H2 Department Team Structure</h2>
+    
+    <div class="org-chart">
+        {% for level in team_structure.levels %}
+        <div class="org-level org-level-{{ level.level }}">
+            {% for member in level.members %}
+            <div class="team-member-card">
+                {% if level.level > 1 %}
+                <div class="tree-connector tree-connector-vertical"></div>
+                {% endif %}
+                <div class="team-card">
+                    <div class="team-card-avatar" style="background: {{ member.gradient }};">
+                        {% if member.image %}
+                        <img src="{{ member.image }}" alt="{{ member.name }}" class="team-card-avatar-image">
+                        {% else %}
+                        <div class="team-card-avatar-icon">
+                            <i class="bi bi-{{ member.icon }}"></i>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="team-card-name">{{ member.name }}</div>
+                    <div class="team-card-position">{{ member.position }}</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Contact Section -->
+<div style="background: linear-gradient(135deg, var(--light-muted) 0%, var(--light-bg) 100%); padding: 3rem 0; border-top: 1px solid var(--light-border);">
+    <div class="container text-center">
+        <h2 class="fw-bold mb-3">Need Assistance?</h2>
+        <p class="lead text-muted mb-4">
+            Contact the H2 Department for any health or hostel-related inquiries
+        </p>
+        <div class="row justify-content-center g-4">
+            <!-- <div class="col-md-4">
+                <div>
+                    <i class="bi bi-telephone-fill" style="font-size: 1.5rem; color: var(--primary-color);"></i>
+                    <p class="mt-2 fw-bold">Phone</p>
+                    <p class="text-muted">+1 (555) 123-4567</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div>
+                    <i class="bi bi-envelope-fill" style="font-size: 1.5rem; color: var(--primary-color);"></i>
+                    <p class="mt-2 fw-bold">Email</p>
+                    <p class="text-muted">h2@institution.edu</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div>
+                    <i class="bi bi-clock-fill" style="font-size: 1.5rem; color: var(--primary-color);"></i>
+                    <p class="mt-2 fw-bold">Hours</p>
+                    <p class="text-muted">24/7 Emergency Service</p>
+                </div>
+            </div> -->
+        </div>
+    </div>
+</div>
+{% endblock %}

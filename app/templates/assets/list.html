@@ -31,15 +31,15 @@
                 <tbody>
                     {% for asset in assets.items %}
                     <tr>
-                        <td><strong>{{ asset.asset_code }}</strong></td>
-                        <td>{{ asset.name }}</td>
-                        <td>{{ asset.category }}</td>
-                        <td>{{ asset.location }}</td>
-                        <td>
+                        <td data-label="Code"><strong>{{ asset.asset_code }}</strong></td>
+                        <td data-label="Name">{{ asset.name }}</td>
+                        <td data-label="Category">{{ asset.category }}</td>
+                        <td data-label="Location">{{ asset.location }}</td>
+                        <td data-label="Condition">
                             <span class="badge" data-status="{{ asset.condition }}">{{ asset.condition }}</span>
                         </td>
-                        <td>
-                            <a href="{{ url_for('assets.view_asset', asset_id=asset.id) }}" class="btn btn-sm btn-primary">View</a>
+                        <td data-label="Action">
+                            <a href="{{ url_for('assets.view_asset', asset_id=asset.id) }}" class="btn btn-sm btn-primary"><i class="bi bi-eye"></i></a>
                         </td>
                     </tr>
                     {% else %}
