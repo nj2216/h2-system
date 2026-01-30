@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Bulk Upload Equipment - H2 System{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Bulk Upload Equipment</h5>
+                </div>
+                
+                <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <strong>Instructions:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Upload a CSV file with equipment data</li>
+                            <li>Required columns: <code>name</code>, <code>equipment_code</code></li>
+                            <li>Optional columns: <code>category</code>, <code>quantity_available</code>, <code>unit_cost</code>, <code>daily_penalty</code>, <code>location</code>, <code>description</code></li>
+                        </ul>
+                    </div>
+
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="file" class="form-label">Select CSV File</label>
+                            <input type="file" class="form-control" id="file" name="file" accept=".csv,.txt" required>
+                            <small class="form-text text-muted">Accepted formats: CSV, TXT</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-cloud-upload"></i> Upload Equipment
+                        </button>
+                        <a href="{{ url_for('equipment.manage_equipment') }}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Manage Equipment
+                        </a>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Sample CSV Format:</h6>
+                            <pre class="bg-light p-3 rounded" style="font-size: 12px;">name,equipment_code,category,quantity_available,unit_cost,daily_penalty,location,description
+Stethoscope,STETHO-01,Device,8,200.00,10.00,Cabinet C,Digital stethoscope
+Blood Pressure Monitor,BPM-001,Device,5,250.00,15.00,Cabinet C,Digital BP monitor
+Thermometer (Digital),THERM-01,Device,20,100.00,5.00,Cabinet D,Quick reading thermometer</pre>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6>Download Template:</h6>
+                            <p>
+                                <a href="#" onclick="downloadTemplate()" class="btn btn-outline-secondary btn-sm">
+                                    <i class="bi bi-download"></i> Download CSV Template
+                                </a>
+                            </p>
+
+                            <h6 class="mt-4">Features:</h6>
+                            <ul style="font-size: 14px;">
+                                <li>Validates all required fields</li>
+                                <li>Checks for duplicate equipment codes</li>
+                                <li>Supports optional fields</li>
+                                <li>Validates numeric values</li>
+                                <li>Detailed error reporting</li>
+                                <li>Batch processing with transaction support</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function downloadTemplate() {
+    const csv = `name,equipment_code,category,quantity_available,unit_cost,daily_penalty,location,description
+Stethoscope,STETHO-01,Device,8,200.00,10.00,Cabinet C,Digital stethoscope
+Blood Pressure Monitor,BPM-001,Device,5,250.00,15.00,Cabinet C,Digital BP monitor
+Thermometer (Digital),THERM-01,Device,20,100.00,5.00,Cabinet D,Quick reading thermometer
+Elastic Bandage (Wide),EB-WIDE,Support,30,30.00,3.00,Shelf A2,Wide elastic bandage for support
+Ice Pack (Reusable),IP-REUSE,Thermal,10,45.00,5.00,Shelf B2,Reusable ice pack for injuries
+Pulse Oximeter,PULSE-OX,Device,12,150.00,8.00,Cabinet E,Finger pulse oximeter
+ECG Machine,ECG-001,Device,2,5000.00,50.00,Cabinet F,Portable ECG machine`;
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'equipment_template.csv';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+}
+</script>
+{% endblock %}

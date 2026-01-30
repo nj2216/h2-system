@@ -15,6 +15,9 @@
             <a href="{{ url_for('equipment.issue_list') }}" class="btn btn-info">
                 <i class="bi bi-list-check"></i> <span class="d-none d-sm-inline">View Issues</span>
             </a>
+            <a href="{{ url_for('equipment.bulk_upload_equipment') }}" class="btn btn-success">
+                <i class="bi bi-cloud-upload"></i> <span class="d-none d-sm-inline">Bulk Upload</span>
+            </a>
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEquipmentModal">
                 <i class="bi bi-plus-circle"></i> Add Equipment
             </button>
@@ -62,145 +65,151 @@
                     <td data-label="Cost" class="d-none d-lg-table-cell">₹{{ "%.2f"|format(equipment.unit_cost) }}</td>
                     <td data-label="Daily Penalty" class="d-none d-xl-table-cell">₹{{ "%.2f"|format(equipment.daily_penalty) }}</td>
                     <td data-label="Actions">
-                        <div class=\"btn-group d-flex\" role=\"group\">
-                            <button class=\"btn btn-sm btn-outline-info d-lg-none\" data-bs-toggle=\"modal\" data-bs-target=\"#detailsModal{{ equipment.id }}\" title=\"More Info\">
-                                <i class=\"bi bi-info-circle\"></i>
+                        <div class="btn-group d-flex" role="group">
+                            <button class="btn btn-sm btn-outline-info d-lg-none" data-bs-toggle="modal" data-bs-target="#detailsModal{{ equipment.id }}" title="More Info">
+                                <i class="bi bi-info-circle"></i>
                             </button>
-                            <button class=\"btn btn-sm btn-outline-primary\" data-bs-toggle=\"modal\" data-bs-target=\"#editModal{{ equipment.id }}\" title=\"Edit\">
-                                <i class=\"bi bi-pencil\"></i>
+                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ equipment.id }}" title="Edit">
+                                <i class="bi bi-pencil"></i>
                             </button>
-                            <form method=\"POST\" style=\"display:inline;\" class=\"flex-grow-1\">
-                                <input type=\"hidden\" name=\"action\" value=\"delete\">
-                                <input type=\"hidden\" name=\"equipment_id\" value=\"{{ equipment.id }}\">
-                                <button type=\"submit\" class=\"btn btn-sm btn-outline-danger w-100\" onclick=\"return confirm('Delete this equipment?')\" title=\"Delete\">
-                                    <i class=\"bi bi-trash\"></i>
+                            <form method="POST" style="display:inline;" class="flex-grow-1">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="equipment_id" value="{{ equipment.id }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger w-100" onclick="return confirm('Delete this equipment?')" title="Delete">
+                                    <i class="bi bi-trash"></i>
                                 </button>
                             </form>
                         </div>
                     </td>
                 </tr>
 
-                <!-- Details Modal -->
-                <div class=\"modal fade\" id=\"detailsModal{{ equipment.id }}\" tabindex=\"-1\">
-                    <div class=\"modal-dialog\">
-                        <div class=\"modal-content\">
-                            <div class=\"modal-header\">
-                                <h5 class=\"modal-title\">{{ equipment.name }}</h5>
-                                <button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"modal\"></button>
-                            </div>
-                            <div class=\"modal-body\">
-                                <div class=\"row mb-3\">
-                                    <div class=\"col-sm-6\">
-                                        <small class=\"text-muted\">Equipment Code</small>
-                                        <p class=\"mb-0\"><span class=\"badge bg-info\">{{ equipment.equipment_code }}</span></p>
-                                    </div>
-                                    <div class=\"col-sm-6\">
-                                        <small class=\"text-muted\">Category</small>
-                                        <p class=\"mb-0\"><strong>{{ equipment.category or '-' }}</strong></p>
-                                    </div>
-                                </div>
-                                <div class=\"row mb-3\">
-                                    <div class=\"col-sm-6\">
-                                        <small class=\"text-muted\">Total Quantity</small>
-                                        <p class=\"mb-0\"><strong>{{ equipment.total_quantity }}</strong></p>
-                                    </div>
-                                    <div class=\"col-sm-6\">
-                                        <small class=\"text-muted\">Available</small>
-                                        <p class=\"mb-0\">
-                                            <span class=\"badge {% if equipment.quantity_available > 5 %}bg-success{% elif equipment.quantity_available > 0 %}bg-warning{% else %}bg-danger{% endif %}\">
-                                                {{ equipment.quantity_available }}
-                                            </span>
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class=\"row mb-3\">
-                                    <div class=\"col-sm-6\">
-                                        <small class=\"text-muted\">Unit Cost</small>
-                                        <p class=\"mb-0\"><strong>₹{{ \"%.2f\"|format(equipment.unit_cost) }}</strong></p>
-                                    </div>
-                                    <div class=\"col-sm-6\">
-                                        <small class=\"text-muted\">Daily Penalty</small>
-                                        <p class=\"mb-0\"><strong>₹{{ \"%.2f\"|format(equipment.daily_penalty) }}</strong></p>
-                                    </div>
-                                </div>
-                                {% if equipment.description %}
-                                <div class=\"row\">
-                                    <div class=\"col-12\">
-                                        <small class=\"text-muted\">Description</small>
-                                        <p class=\"mb-0\">{{ equipment.description }}</p>
-                                    </div>
-                                </div>
-                                {% endif %}
-                            </div>
-                            <div class=\"modal-footer\">
-                                <button type=\"button\" class=\"btn btn-secondary\" data-bs-dismiss=\"modal\">Close</button>
-                                <button class=\"btn btn-primary\" data-bs-toggle=\"modal\" data-bs-target=\"#editModal{{ equipment.id }}\" data-bs-dismiss=\"modal\">
-                                    <i class=\"bi bi-pencil\"></i> Edit
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Edit Modal -->
-                <div class="modal fade" id="editModal{{ equipment.id }}" tabindex="-1">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <form method="POST">
-                                <div class="modal-header">
-                                    <h5 class="modal-title">Edit Equipment</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <input type="hidden" name="action" value="edit">
-                                    <input type="hidden" name="equipment_id" value="{{ equipment.id }}">
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Equipment Name</label>
-                                        <input type="text" name="name" class="form-control" value="{{ equipment.name }}" required>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Category</label>
-                                        <input type="text" name="category" class="form-control" value="{{ equipment.category or '' }}">
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Description</label>
-                                        <textarea name="description" class="form-control" rows="3">{{ equipment.description or '' }}</textarea>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Unit Cost (₹)</label>
-                                        <input type="number" name="unit_cost" class="form-control" step="0.01" value="{{ equipment.unit_cost }}" required>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Location</label>
-                                        <input type="text" name="location" class="form-control" value="{{ equipment.location or '' }}">
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label class="form-label">Daily Penalty (₹)</label>
-                                        <input type="number" name="daily_penalty" class="form-control" step="0.01" value="{{ equipment.daily_penalty }}" required>
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                    <button type="submit" class="btn btn-primary">Update Equipment</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                {% else %}
-                <tr>
-                    <td colspan="8" class="text-center text-muted py-4">No equipment found</td>
-                </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+
+    <!-- Empty State Message -->
+    {% if not equipments.items %}
+    <div class="alert alert-info text-center" role="alert">
+        <i class="bi bi-info-circle"></i> No equipment found. <a href="#" data-bs-toggle="modal" data-bs-target="#addEquipmentModal">Add equipment</a>
+    </div>
+    {% endif %}
+
+    <!-- Details Modals (after table) -->
+    {% for equipment in equipments.items %}
+    <div class="modal fade" id="detailsModal{{ equipment.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ equipment.name }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-sm-6">
+                            <small class="text-muted">Equipment Code</small>
+                            <p class="mb-0"><span class="badge bg-info">{{ equipment.equipment_code }}</span></p>
+                        </div>
+                        <div class="col-sm-6">
+                            <small class="text-muted">Category</small>
+                            <p class="mb-0"><strong>{{ equipment.category or '-' }}</strong></p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-6">
+                            <small class="text-muted">Total Quantity</small>
+                            <p class="mb-0"><strong>{{ equipment.total_quantity }}</strong></p>
+                        </div>
+                        <div class="col-sm-6">
+                            <small class="text-muted">Available</small>
+                            <p class="mb-0">
+                                <span class="badge {% if equipment.quantity_available > 5 %}bg-success{% elif equipment.quantity_available > 0 %}bg-warning{% else %}bg-danger{% endif %}">
+                                    {{ equipment.quantity_available }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-sm-6">
+                            <small class="text-muted">Unit Cost</small>
+                            <p class="mb-0"><strong>₹{{ "%.2f"|format(equipment.unit_cost) }}</strong></p>
+                        </div>
+                        <div class="col-sm-6">
+                            <small class="text-muted">Daily Penalty</small>
+                            <p class="mb-0"><strong>₹{{ "%.2f"|format(equipment.daily_penalty) }}</strong></p>
+                        </div>
+                    </div>
+                    {% if equipment.description %}
+                    <div class="row">
+                        <div class="col-12">
+                            <small class="text-muted">Description</small>
+                            <p class="mb-0">{{ equipment.description }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ equipment.id }}" data-bs-dismiss="modal">
+                        <i class="bi bi-pencil"></i> Edit
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editModal{{ equipment.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="POST">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Edit Equipment</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="action" value="edit">
+                        <input type="hidden" name="equipment_id" value="{{ equipment.id }}">
+
+                        <div class="mb-3">
+                            <label class="form-label">Equipment Name</label>
+                            <input type="text" name="name" class="form-control" value="{{ equipment.name }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Category</label>
+                            <input type="text" name="category" class="form-control" value="{{ equipment.category or '' }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea name="description" class="form-control" rows="3">{{ equipment.description or '' }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Unit Cost (₹)</label>
+                            <input type="number" name="unit_cost" class="form-control" step="0.01" value="{{ equipment.unit_cost }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Location</label>
+                            <input type="text" name="location" class="form-control" value="{{ equipment.location or '' }}">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Daily Penalty (₹)</label>
+                            <input type="number" name="daily_penalty" class="form-control" step="0.01" value="{{ equipment.daily_penalty }}" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Update Equipment</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
 
     <!-- Pagination -->
     {% if equipments.pages > 1 %}

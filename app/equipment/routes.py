@@ -339,3 +339,137 @@ def student_dashboard():
     ).scalar() or 0.0
     
     return render_template('equipment/student_dashboard.html', issued=issued, returned=returned, total_penalty=total_penalty)
+
+
+@equipment_bp.route('/bulk-upload', methods=['GET', 'POST'])
+@login_required
+@require_role('H2')
+def bulk_upload_equipment():
+    """Bulk upload equipment from CSV file"""
+    import csv
+    import io
+    
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            flash('No file part in the request.', 'danger')
+            return redirect(url_for('equipment.bulk_upload_equipment'))
+        
+        file = request.files['file']
+        
+        if file.filename == '':
+            flash('No selected file.', 'danger')
+            return redirect(url_for('equipment.bulk_upload_equipment'))
+        
+        if not file.filename.endswith(('.csv', '.txt')):
+            flash('Please upload a CSV or TXT file.', 'danger')
+            return redirect(url_for('equipment.bulk_upload_equipment'))
+        
+        try:
+            # Read file
+            stream = io.StringIO(file.read().decode('UTF-8'), newline=None)
+            csv_reader = csv.DictReader(stream)
+            
+            if not csv_reader.fieldnames:
+                flash('CSV file is empty.', 'danger')
+                return redirect(url_for('equipment.bulk_upload_equipment'))
+            
+            # Expected columns: name, equipment_code, category, quantity_available, unit_cost, daily_penalty, location, description
+            required_fields = ['name', 'equipment_code']
+            missing_fields = [field for field in required_fields if field not in csv_reader.fieldnames]
+            
+            if missing_fields:
+                flash(f'Missing required columns: {", ".join(missing_fields)}', 'danger')
+                return redirect(url_for('equipment.bulk_upload_equipment'))
+            
+            created = 0
+            errors = []
+            
+            for row_num, row in enumerate(csv_reader, start=2):  # Start at 2 (after header)
+                try:
+                    name = row.get('name', '').strip()
+                    equipment_code = row.get('equipment_code', '').strip()
+                    
+                    if not name or not equipment_code:
+                        errors.append(f'Row {row_num}: Missing name or equipment code')
+                        continue
+                    
+                    # Parse quantity
+                    quantity_available = 0
+                    if row.get('quantity_available', '').strip():
+                        try:
+                            quantity_available = int(row.get('quantity_available').strip())
+                        except ValueError:
+                            errors.append(f'Row {row_num}: Quantity must be a number')
+                            continue
+                    
+                    if quantity_available < 0:
+                        errors.append(f'Row {row_num}: Quantity cannot be negative')
+                        continue
+                    
+                    # Parse costs
+                    unit_cost = 0.0
+                    if row.get('unit_cost', '').strip():
+                        try:
+                            unit_cost = float(row.get('unit_cost').strip())
+                        except ValueError:
+                            errors.append(f'Row {row_num}: Unit cost must be a number')
+                            continue
+                    
+                    daily_penalty = 0.0
+                    if row.get('daily_penalty', '').strip():
+                        try:
+                            daily_penalty = float(row.get('daily_penalty').strip())
+                        except ValueError:
+                            errors.append(f'Row {row_num}: Daily penalty must be a number')
+                            continue
+                    
+                    # Check if equipment code already exists
+                    existing_equipment = MedicalEquipment.query.filter_by(equipment_code=equipment_code).first()
+                    
+                    if existing_equipment:
+                        # Add to existing stock
+                        existing_equipment.quantity_available += quantity_available
+                        # Update other fields if provided
+                        if row.get('unit_cost', '').strip():
+                            existing_equipment.unit_cost = unit_cost
+                        if row.get('daily_penalty', '').strip():
+                            existing_equipment.daily_penalty = daily_penalty
+                        if row.get('location', '').strip():
+                            existing_equipment.location = row.get('location', '').strip()
+                    else:
+                        # Create new equipment
+                        equipment = MedicalEquipment(
+                            name=name,
+                            equipment_code=equipment_code,
+                            category=row.get('category', '').strip() or None,
+                            description=row.get('description', '').strip() or None,
+                            quantity_available=quantity_available,
+                            unit_cost=unit_cost,
+                            location=row.get('location', '').strip() or None,
+                            daily_penalty=daily_penalty
+                        )
+                        db.session.add(equipment)
+                    
+                    created += 1
+                
+                except Exception as e:
+                    errors.append(f'Row {row_num}: {str(e)}')
+            
+            # Commit all successful entries
+            if created > 0:
+                db.session.commit()
+                flash(f'Successfully created {created} equipment item(s).', 'success')
+            
+            if errors:
+                error_msg = '<br>'.join(errors[:10])  # Show first 10 errors
+                if len(errors) > 10:
+                    error_msg += f'<br>... and {len(errors) - 10} more errors'
+                flash(f'Encountered {len(errors)} error(s):<br>{error_msg}', 'warning')
+            
+            return redirect(url_for('equipment.manage_equipment'))
+        
+        except Exception as e:
+            flash(f'Error processing file: {str(e)}', 'danger')
+            return redirect(url_for('equipment.bulk_upload_equipment'))
+    
+    return render_template('equipment/bulk_upload.html')
