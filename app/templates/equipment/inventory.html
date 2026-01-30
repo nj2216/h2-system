@@ -3,6 +3,9 @@
 {% block title %}Medical Equipment Inventory - H2 System{% endblock %}
 
 {% block content %}
+<style>
+    .btn-group .btn { flex: 1; }
+</style>
 <div class="container mt-4">
     <div class="row mb-4">
         <div class="col-md-8">
@@ -42,13 +45,13 @@
                 <tr>
                     <th data-label="Code">Code</th>
                     <th data-label="Name">Name</th>
-                    <th data-label="Category">Category</th>
+                    <th data-label="Category" class="d-none d-lg-table-cell">Category</th>
                     <th data-label="Available">Available</th>
-                    <th data-label="Issued">Issued</th>
-                    <th data-label="Damaged">Damaged</th>
-                    <th data-label="Lost">Lost</th>
-                    <th data-label="Daily Penalty">Daily Penalty</th>
-                    <th data-label="Location">Location</th>
+                    <th data-label="Issued" class="d-none d-md-table-cell">Issued</th>
+                    <th data-label="Damaged" class="d-none d-lg-table-cell">Damaged</th>
+                    <th data-label="Lost" class="d-none d-lg-table-cell">Lost</th>
+                    <th data-label="Daily Penalty" class="d-none d-lg-table-cell">Daily Penalty</th>
+                    <th data-label="Location" class="d-none d-xl-table-cell">Location</th>
                     <th data-label="Actions">Actions</th>
                 </tr>
             </thead>
@@ -69,11 +72,94 @@
                     <td data-label="Daily Penalty" class="d-none d-lg-table-cell">₹{{ "%.2f"|format(equipment.daily_penalty) }}</td>
                     <td data-label="Location" class="d-none d-xl-table-cell">{{ equipment.location or '-' }}</td>
                     <td data-label="Actions">
-                        <a href="{{ url_for('equipment.issue_equipment') }}" class="btn btn-sm btn-outline-primary" title="Issue">
-                            <i class="bi bi-arrow-right-circle"></i>
-                        </a>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-outline-info d-lg-none" data-bs-toggle="modal" data-bs-target="#detailsModal{{ equipment.id }}" title="More Info">
+                                <i class="bi bi-info-circle"></i>
+                            </button>
+                            <a href="{{ url_for('equipment.issue_equipment') }}" class="btn btn-sm btn-outline-primary" title="Issue">
+                                <i class="bi bi-arrow-right-circle"></i>
+                            </a>
+                        </div>
                     </td>
                 </tr>
+
+                <!-- Details Modal -->
+                <div class="modal fade" id="detailsModal{{ equipment.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">{{ equipment.name }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row mb-3">
+                                    <div class="col-sm-6">
+                                        <small class="text-muted">Equipment Code</small>
+                                        <p class="mb-0"><span class="badge bg-info">{{ equipment.equipment_code }}</span></p>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <small class="text-muted">Category</small>
+                                        <p class="mb-0"><strong>{{ equipment.category or '-' }}</strong></p>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-6">
+                                        <small class="text-muted">Total Quantity</small>
+                                        <p class="mb-0"><strong>{{ equipment.total_quantity }}</strong></p>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <small class="text-muted">Available</small>
+                                        <p class="mb-0">
+                                            <span class="badge {% if equipment.quantity_available > 5 %}bg-success{% elif equipment.quantity_available > 0 %}bg-warning{% else %}bg-danger{% endif %}">
+                                                {{ equipment.quantity_available }}
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-6">
+                                        <small class="text-muted">Issued</small>
+                                        <p class="mb-0"><span class="badge bg-secondary">{{ equipment.quantity_issued }}</span></p>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <small class="text-muted">Damaged</small>
+                                        <p class="mb-0"><span class="badge bg-warning">{{ equipment.quantity_damaged }}</span></p>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-6">
+                                        <small class="text-muted">Lost</small>
+                                        <p class="mb-0"><span class="badge bg-danger">{{ equipment.quantity_lost }}</span></p>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <small class="text-muted">Daily Penalty</small>
+                                        <p class="mb-0"><strong>₹{{ "%.2f"|format(equipment.daily_penalty) }}</strong></p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <small class="text-muted">Location</small>
+                                        <p class="mb-0"><strong>{{ equipment.location or '-' }}</strong></p>
+                                    </div>
+                                </div>
+                                {% if equipment.description %}
+                                <div class="row mt-3">
+                                    <div class="col-12">
+                                        <small class="text-muted">Description</small>
+                                        <p class="mb-0">{{ equipment.description }}</p>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                <a href="{{ url_for('equipment.issue_equipment') }}" class="btn btn-primary">
+                                    <i class="bi bi-arrow-right-circle"></i> Issue Equipment
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 {% else %}
                 <tr>
                     <td colspan="10" class="text-center py-4">No equipment found</td>

@@ -3,6 +3,9 @@
 {% block title %}Manage Medical Equipment - H2 System{% endblock %}
 
 {% block content %}
+<style>
+    .btn-group .btn { flex: 1; }
+</style>
 <div class="container mt-4">
     <div class="row mb-4">
         <div class="col-md-8">
@@ -36,11 +39,11 @@
                 <tr>
                     <th data-label="Code">Code</th>
                     <th data-label="Name">Name</th>
-                    <th data-label="Category">Category</th>
-                    <th data-label="Total">Total</th>
+                    <th data-label="Category" class="d-none d-md-table-cell">Category</th>
+                    <th data-label="Total" class="d-none d-lg-table-cell">Total</th>
                     <th data-label="Available">Available</th>
-                    <th data-label="Cost">Unit Cost</th>
-                    <th data-label="Daily Penalty">Daily Penalty</th>
+                    <th data-label="Cost" class="d-none d-lg-table-cell">Unit Cost</th>
+                    <th data-label="Daily Penalty" class="d-none d-xl-table-cell">Daily Penalty</th>
                     <th data-label="Actions">Actions</th>
                 </tr>
             </thead>
@@ -59,18 +62,85 @@
                     <td data-label="Cost" class="d-none d-lg-table-cell">₹{{ "%.2f"|format(equipment.unit_cost) }}</td>
                     <td data-label="Daily Penalty" class="d-none d-xl-table-cell">₹{{ "%.2f"|format(equipment.daily_penalty) }}</td>
                     <td data-label="Actions">
-                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ equipment.id }}" title="Edit">
-                            <i class="bi bi-pencil"></i>
-                        </button>
-                        <form method="POST" style="display:inline;">
-                            <input type="hidden" name="action" value="delete">
-                            <input type="hidden" name="equipment_id" value="{{ equipment.id }}">
-                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this equipment?')" title="Delete">
-                                <i class="bi bi-trash"></i>
+                        <div class=\"btn-group d-flex\" role=\"group\">
+                            <button class=\"btn btn-sm btn-outline-info d-lg-none\" data-bs-toggle=\"modal\" data-bs-target=\"#detailsModal{{ equipment.id }}\" title=\"More Info\">
+                                <i class=\"bi bi-info-circle\"></i>
                             </button>
-                        </form>
+                            <button class=\"btn btn-sm btn-outline-primary\" data-bs-toggle=\"modal\" data-bs-target=\"#editModal{{ equipment.id }}\" title=\"Edit\">
+                                <i class=\"bi bi-pencil\"></i>
+                            </button>
+                            <form method=\"POST\" style=\"display:inline;\" class=\"flex-grow-1\">
+                                <input type=\"hidden\" name=\"action\" value=\"delete\">
+                                <input type=\"hidden\" name=\"equipment_id\" value=\"{{ equipment.id }}\">
+                                <button type=\"submit\" class=\"btn btn-sm btn-outline-danger w-100\" onclick=\"return confirm('Delete this equipment?')\" title=\"Delete\">
+                                    <i class=\"bi bi-trash\"></i>
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
+
+                <!-- Details Modal -->
+                <div class=\"modal fade\" id=\"detailsModal{{ equipment.id }}\" tabindex=\"-1\">
+                    <div class=\"modal-dialog\">
+                        <div class=\"modal-content\">
+                            <div class=\"modal-header\">
+                                <h5 class=\"modal-title\">{{ equipment.name }}</h5>
+                                <button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"modal\"></button>
+                            </div>
+                            <div class=\"modal-body\">
+                                <div class=\"row mb-3\">
+                                    <div class=\"col-sm-6\">
+                                        <small class=\"text-muted\">Equipment Code</small>
+                                        <p class=\"mb-0\"><span class=\"badge bg-info\">{{ equipment.equipment_code }}</span></p>
+                                    </div>
+                                    <div class=\"col-sm-6\">
+                                        <small class=\"text-muted\">Category</small>
+                                        <p class=\"mb-0\"><strong>{{ equipment.category or '-' }}</strong></p>
+                                    </div>
+                                </div>
+                                <div class=\"row mb-3\">
+                                    <div class=\"col-sm-6\">
+                                        <small class=\"text-muted\">Total Quantity</small>
+                                        <p class=\"mb-0\"><strong>{{ equipment.total_quantity }}</strong></p>
+                                    </div>
+                                    <div class=\"col-sm-6\">
+                                        <small class=\"text-muted\">Available</small>
+                                        <p class=\"mb-0\">
+                                            <span class=\"badge {% if equipment.quantity_available > 5 %}bg-success{% elif equipment.quantity_available > 0 %}bg-warning{% else %}bg-danger{% endif %}\">
+                                                {{ equipment.quantity_available }}
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class=\"row mb-3\">
+                                    <div class=\"col-sm-6\">
+                                        <small class=\"text-muted\">Unit Cost</small>
+                                        <p class=\"mb-0\"><strong>₹{{ \"%.2f\"|format(equipment.unit_cost) }}</strong></p>
+                                    </div>
+                                    <div class=\"col-sm-6\">
+                                        <small class=\"text-muted\">Daily Penalty</small>
+                                        <p class=\"mb-0\"><strong>₹{{ \"%.2f\"|format(equipment.daily_penalty) }}</strong></p>
+                                    </div>
+                                </div>
+                                {% if equipment.description %}
+                                <div class=\"row\">
+                                    <div class=\"col-12\">
+                                        <small class=\"text-muted\">Description</small>
+                                        <p class=\"mb-0\">{{ equipment.description }}</p>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class=\"modal-footer\">
+                                <button type=\"button\" class=\"btn btn-secondary\" data-bs-dismiss=\"modal\">Close</button>
+                                <button class=\"btn btn-primary\" data-bs-toggle=\"modal\" data-bs-target=\"#editModal{{ equipment.id }}\" data-bs-dismiss=\"modal\">
+                                    <i class=\"bi bi-pencil\"></i> Edit
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Edit Modal -->
                 <div class="modal fade" id="editModal{{ equipment.id }}" tabindex="-1">

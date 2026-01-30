@@ -3,6 +3,9 @@
 {% block title %}Equipment Penalty Report - H2 System{% endblock %}
 
 {% block content %}
+<style>
+    .btn-group .btn { flex: 1; }
+</style>
 <div class="container mt-4">
     <div class="row mb-4">
         <div class="col-md-8">
@@ -39,11 +42,11 @@
             <thead>
                 <tr>
                     <th data-label="Student">Student</th>
-                    <th data-label="Equipment">Equipment</th>
-                    <th data-label="Return Reason">Return Reason</th>
-                    <th data-label="Days Overdue">Days Overdue</th>
+                    <th data-label="Equipment" class="d-none d-sm-table-cell">Equipment</th>
+                    <th data-label="Return Reason" class="d-none d-md-table-cell">Return Reason</th>
+                    <th data-label="Days Overdue" class="d-none d-lg-table-cell">Days Overdue</th>
                     <th data-label="Penalty Amount">Penalty Amount</th>
-                    <th data-label="Status">Status</th>
+                    <th data-label="Status" class="d-none d-md-table-cell">Status</th>
                     <th data-label="Actions">Actions</th>
                 </tr>
             </thead>
@@ -55,8 +58,8 @@
                         <br>
                         <small class="text-muted">{{ issue.student.roll_number }}</small>
                     </td>
-                    <td data-label="Equipment">{{ issue.equipment.name }}</td>
-                    <td data-label="Return Reason">
+                    <td data-label="Equipment" class="d-none d-sm-table-cell">{{ issue.equipment.name }}</td>
+                    <td data-label="Return Reason" class="d-none d-md-table-cell">
                         {% if issue.return_condition == 'damaged' %}
                             <span class="badge bg-warning">Damaged</span>
                         {% elif issue.return_condition == 'lost' %}
@@ -67,7 +70,7 @@
                             <span class="badge bg-secondary">Other</span>
                         {% endif %}
                     </td>
-                    <td data-label="Days Overdue">
+                    <td data-label="Days Overdue" class="d-none d-lg-table-cell">
                         {% if issue.days_overdue > 0 %}
                             {{ issue.days_overdue }} days
                         {% else %}
@@ -77,7 +80,7 @@
                     <td data-label="Penalty Amount">
                         <strong>₹{{ "%.2f"|format(issue.penalty_amount) }}</strong>
                     </td>
-                    <td data-label="Status">
+                    <td data-label="Status" class="d-none d-md-table-cell">
                         {% if issue.penalty_paid %}
                             <span class="badge bg-success">Paid</span>
                             <br>
@@ -87,15 +90,101 @@
                         {% endif %}
                     </td>
                     <td data-label="Actions">
-                        {% if not issue.penalty_paid %}
-                        <form method="POST" action="{{ url_for('equipment.mark_penalty_paid', issue_id=issue.id) }}" style="display:inline;">
-                            <button type="submit" class="btn btn-sm btn-outline-success" onclick="return confirm('Mark penalty as paid?')">
-                                <i class="bi bi-check-circle"></i> Mark Paid
+                        <div class="btn-group d-flex" role="group">
+                            <button class="btn btn-sm btn-outline-info d-lg-none" data-bs-toggle="modal" data-bs-target="#detailsModal{{ issue.id }}" title="More Info">
+                                <i class="bi bi-info-circle"></i>
                             </button>
-                        </form>
-                        {% endif %}
+                            {% if not issue.penalty_paid %}
+                            <form method="POST" action="{{ url_for('equipment.mark_penalty_paid', issue_id=issue.id) }}" style="display:inline;" class="flex-grow-1">
+                                <button type="submit" class="btn btn-sm btn-outline-success w-100" onclick="return confirm('Mark penalty as paid?')">
+                                    <i class="bi bi-check-circle"></i> Mark Paid
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
+
+                <!-- Details Modal -->
+                <div class="modal fade" id="detailsModal{{ issue.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Penalty Details</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row mb-3">
+                                    <div class="col-12">
+                                        <small class="text-muted">Student</small>
+                                        <p class="mb-0"><strong>{{ issue.student.user.first_name }} {{ issue.student.user.last_name }}</strong></p>
+                                        <small class="text-muted">{{ issue.student.roll_number }}</small>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-6">
+                                        <small class="text-muted">Equipment</small>
+                                        <p class="mb-0"><strong>{{ issue.equipment.name }}</strong></p>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <small class="text-muted">Return Reason</small>
+                                        <p class="mb-0">
+                                            {% if issue.return_condition == 'damaged' %}
+                                                <span class="badge bg-warning">Damaged</span>
+                                            {% elif issue.return_condition == 'lost' %}
+                                                <span class="badge bg-danger">Lost</span>
+                                            {% elif issue.is_overdue and not issue.actual_return_date %}
+                                                <span class="badge bg-danger">Overdue</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Other</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-6">
+                                        <small class="text-muted">Days Overdue</small>
+                                        <p class="mb-0">
+                                            {% if issue.days_overdue > 0 %}
+                                                <strong>{{ issue.days_overdue }} days</strong>
+                                            {% else %}
+                                                <strong>-</strong>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <small class="text-muted">Penalty Amount</small>
+                                        <p class="mb-0"><strong>₹{{ "%.2f"|format(issue.penalty_amount) }}</strong></p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-12">
+                                        <small class="text-muted">Status</small>
+                                        <p class="mb-0">
+                                            {% if issue.penalty_paid %}
+                                                <span class="badge bg-success">Paid</span>
+                                                <br>
+                                                <small class="text-muted">{{ issue.penalty_paid_date.strftime('%Y-%m-%d') }}</small>
+                                            {% else %}
+                                                <span class="badge bg-danger">Unpaid</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                {% if not issue.penalty_paid %}
+                                <form method="POST" action="{{ url_for('equipment.mark_penalty_paid', issue_id=issue.id) }}" style="display:inline;">
+                                    <button type="submit" class="btn btn-success" onclick="return confirm('Mark penalty as paid?')">
+                                        <i class="bi bi-check-circle"></i> Mark Paid
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 {% else %}
                 <tr>
                     <td colspan="7" class="text-center text-muted py-4">No penalties found</td>

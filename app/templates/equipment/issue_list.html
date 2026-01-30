@@ -3,6 +3,9 @@
 {% block title %}Equipment Issues - H2 System{% endblock %}
 
 {% block content %}
+<style>
+    .btn-group .btn { flex: 1; }
+</style>
 <div class="container mt-4">
     <div class="row mb-4">
         <div class="col-md-8">
@@ -53,12 +56,12 @@
             <thead>
                 <tr>
                     <th data-label="Student">Student</th>
-                    <th data-label="Equipment">Equipment</th>
-                    <th data-label="Qty">Qty</th>
-                    <th data-label="Issued Date">Issued Date</th>
-                    <th data-label="Expected Return">Expected Return</th>
+                    <th data-label="Equipment" class="d-none d-sm-table-cell">Equipment</th>
+                    <th data-label="Qty" class="d-none d-sm-table-cell">Qty</th>
+                    <th data-label="Issued Date" class="d-none d-md-table-cell">Issued Date</th>
+                    <th data-label="Expected Return" class="d-none d-lg-table-cell">Expected Return</th>
                     <th data-label="Status">Status</th>
-                    <th data-label="Penalty">Penalty</th>
+                    <th data-label="Penalty" class="d-none d-lg-table-cell">Penalty</th>
                     <th data-label="Actions">Actions</th>
                 </tr>
             </thead>
@@ -70,10 +73,10 @@
                         <br>
                         <small class="text-muted">{{ issue.student.roll_number }}</small>
                     </td>
-                    <td data-label="Equipment">{{ issue.equipment.name }}</td>
-                    <td data-label="Qty">{{ issue.quantity }}</td>
-                    <td data-label="Issued Date">{{ issue.issued_date.strftime('%Y-%m-%d') }}</td>
-                    <td data-label="Expected Return">{{ issue.expected_return_date.strftime('%Y-%m-%d') }}</td>
+                    <td data-label="Equipment" class="d-none d-sm-table-cell">{{ issue.equipment.name }}</td>
+                    <td data-label="Qty" class="d-none d-sm-table-cell">{{ issue.quantity }}</td>
+                    <td data-label="Issued Date" class="d-none d-md-table-cell">{{ issue.issued_date.strftime('%Y-%m-%d') }}</td>
+                    <td data-label="Expected Return" class="d-none d-lg-table-cell">{{ issue.expected_return_date.strftime('%Y-%m-%d') }}</td>
                     <td data-label="Status">
                         {% if issue.status == 'Issued' %}
                             <span class="badge bg-info">Issued</span>
@@ -83,7 +86,7 @@
                             <span class="badge bg-success">Returned</span>
                         {% endif %}
                     </td>
-                    <td data-label="Penalty">
+                    <td data-label="Penalty" class="d-none d-lg-table-cell">
                         {% if issue.penalty_amount > 0 %}
                             <span class="badge bg-warning">₹{{ "%.2f"|format(issue.penalty_amount) }}</span>
                         {% else %}
@@ -91,13 +94,91 @@
                         {% endif %}
                     </td>
                     <td data-label="Actions">
-                        {% if issue.status != 'Returned' and current_user.role in ['H2', 'Doctor'] %}
-                        <a href="{{ url_for('equipment.return_equipment', issue_id=issue.id) }}" class="btn btn-sm btn-outline-success" title="Process Return">
-                            <i class="bi bi-check-circle"></i>
-                        </a>
-                        {% endif %}
+                        <div class="btn-group d-flex" role="group">
+                            <button class="btn btn-sm btn-outline-info d-lg-none" data-bs-toggle="modal" data-bs-target="#detailsModal{{ issue.id }}" title="More Info">
+                                <i class="bi bi-info-circle"></i>
+                            </button>
+                            {% if issue.status != 'Returned' and current_user.role in ['H2', 'Doctor'] %}
+                            <a href="{{ url_for('equipment.return_equipment', issue_id=issue.id) }}" class="btn btn-sm btn-outline-success" title="Process Return">
+                                <i class="bi bi-check-circle"></i>
+                            </a>
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
+
+                <!-- Details Modal -->
+                <div class="modal fade" id="detailsModal{{ issue.id }}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Equipment Issue Details</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row mb-3">
+                                    <div class="col-12">
+                                        <small class="text-muted">Student</small>
+                                        <p class="mb-0"><strong>{{ issue.student.user.first_name }} {{ issue.student.user.last_name }}</strong></p>
+                                        <small class="text-muted">{{ issue.student.roll_number }}</small>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-6">
+                                        <small class="text-muted">Equipment</small>
+                                        <p class="mb-0"><strong>{{ issue.equipment.name }}</strong></p>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <small class="text-muted">Quantity</small>
+                                        <p class="mb-0"><strong>{{ issue.quantity }}</strong></p>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-6">
+                                        <small class="text-muted">Issued Date</small>
+                                        <p class="mb-0"><strong>{{ issue.issued_date.strftime('%Y-%m-%d') }}</strong></p>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <small class="text-muted">Expected Return</small>
+                                        <p class="mb-0"><strong>{{ issue.expected_return_date.strftime('%Y-%m-%d') }}</strong></p>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-6">
+                                        <small class="text-muted">Status</small>
+                                        <p class="mb-0">
+                                            {% if issue.status == 'Issued' %}
+                                                <span class="badge bg-info">Issued</span>
+                                            {% elif issue.status == 'Overdue' %}
+                                                <span class="badge bg-danger">Overdue - {{ issue.days_overdue }} days</span>
+                                            {% elif issue.status == 'Returned' %}
+                                                <span class="badge bg-success">Returned</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <small class="text-muted">Penalty Amount</small>
+                                        <p class="mb-0">
+                                            {% if issue.penalty_amount > 0 %}
+                                                <span class="badge bg-warning">₹{{ "%.2f"|format(issue.penalty_amount) }}</span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                {% if issue.status != 'Returned' and current_user.role in ['H2', 'Doctor'] %}
+                                <a href="{{ url_for('equipment.return_equipment', issue_id=issue.id) }}" class="btn btn-success">
+                                    <i class="bi bi-check-circle"></i> Process Return
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 {% else %}
                 <tr>
                     <td colspan="8" class="text-center text-muted py-4">No equipment issues found</td>
