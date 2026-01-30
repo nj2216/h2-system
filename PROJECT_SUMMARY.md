@@ -99,7 +99,7 @@ h2sqrr/
 
 ---
 
-## Database Models (10 Models)
+## Database Models (12 Models)
 
 1. **User** - System users with roles and authentication
 2. **Student** - Student profiles with emergency contacts
@@ -110,7 +110,9 @@ h2sqrr/
 7. **Asset** - Hostel assets and equipment
 8. **MaintenanceLog** - Asset maintenance history
 9. **SickLeaveRequest** - Sick leave/food workflow
-10. Additional supporting fields and relationships
+10. **MedicalEquipment** - Non-consumable equipment inventory
+11. **EquipmentIssue** - Equipment issuance and return tracking
+12. Additional supporting fields and relationships
 
 ---
 
@@ -158,7 +160,18 @@ h2sqrr/
 - Optional Director review
 - Status tracking throughout workflow
 
-### 7. Role-Based Dashboards ✓
+### 7. Equipment Management ✓
+- Equipment inventory tracking for non-consumable items
+- Issue equipment to students with return date tracking
+- Return processing with automatic overdue detection
+- Condition-based penalty calculation
+- Penalty tracking and payment management
+- Multiple role-based workflows
+- Student equipment dashboard
+- Responsive and mobile-optimized UI
+- Dark mode support
+
+### 8. Role-Based Dashboards ✓
 - H2 Dashboard (health team view)
 - Warden Dashboard (hostel management)
 - Office Dashboard (administrative)
@@ -179,7 +192,7 @@ h2sqrr/
 
 ---
 
-## API Endpoints (42 Total)
+## API Endpoints (49 Total)
 
 ### Authentication (6 routes)
 - `GET/POST /auth/login` - Login
@@ -233,6 +246,15 @@ h2sqrr/
 - `POST /sickleave/<id>/office-approve` - Office approval
 - `POST /sickleave/<id>/director-approve` - Director approval
 - `GET /sickleave/approved` - Approved requests
+
+### Equipment (7 routes)
+- `GET /equipment/inventory` - View equipment stock
+- `GET/POST /equipment/issue` - Issue equipment
+- `GET /equipment/issues` - List all issues
+- `GET/POST /equipment/return/<id>` - Process return
+- `GET /equipment/penalties` - View penalties
+- `GET/POST /equipment/manage` - Manage equipment
+- `GET /equipment/student-dashboard` - Student view
 
 ### Dashboards (7 functions)
 - `GET /dashboard/` - Main dashboard
@@ -368,25 +390,25 @@ python run.py
 
 | Role | Features | Access |
 |------|----------|--------|
-| **H2** | Health teams | Students, Visits, Prescriptions, Stock |
-| **Warden** | Hostel staff | Students, Assets, Maintenance, SickLeave |
-| **Office** | Admin | SickLeave approval workflow |
+| **H2** | Health teams | Students, Visits, Prescriptions, Stock, Equipment (issue/manage) |
+| **Warden** | Hostel staff | Students, Assets, Maintenance, SickLeave, Equipment (view issues) |
+| **Office** | Admin | SickLeave approval, Penalty tracking, Equipment penalties |
 | **Director** | System admin | All features, User management |
-| **Doctor** | Medical staff | Visits, Prescriptions |
-| **Student** | Residents | Own health records only |
+| **Doctor** | Medical staff | Visits, Prescriptions, Equipment (issue/return) |
+| **Student** | Residents | Own health records, Equipment tracking |
 
 ---
 
 ## Code Statistics
 
-- **Python Code**: ~1,500 lines
-- **HTML Templates**: ~1,200 lines
-- **CSS**: ~300 lines
-- **JavaScript**: ~200 lines
-- **Database Models**: 10 models
-- **Blueprints**: 7 modules
-- **Routes**: 42 endpoints
-- **Templates**: 18 files
+- **Python Code**: ~1,700 lines
+- **HTML Templates**: ~1,400 lines (including equipment templates)
+- **CSS**: ~350 lines (with dark mode support)
+- **JavaScript**: ~250 lines
+- **Database Models**: 12 models
+- **Blueprints**: 8 modules (including equipment)
+- **Routes**: 49 endpoints
+- **Templates**: 25 files (including equipment templates)
 
 ---
 

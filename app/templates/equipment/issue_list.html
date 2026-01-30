@@ -48,9 +48,9 @@
     </form>
 
     <!-- Issues Table -->
-    <div class="table-responsive" style="background-color: var(--card-bg, #ffffff); border-radius: 0.25rem;">
-        <table class="table table-hover" style="color: var(--text-color, #000000);">
-            <thead class="" style="background-color: var(--table-header-bg, #f8f9fa); color: var(--text-color, #000000); border-bottom: 2px solid var(--border-color, #dee2e6);">
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
                 <tr>
                     <th data-label="Student">Student</th>
                     <th data-label="Equipment">Equipment</th>
@@ -64,11 +64,11 @@
             </thead>
             <tbody>
                 {% for issue in issues.items %}
-                <tr style="border-bottom: 1px solid var(--border-color, #dee2e6);">
+                <tr>
                     <td data-label="Student">
                         <strong>{{ issue.student.user.first_name }} {{ issue.student.user.last_name }}</strong>
                         <br>
-                        <small class="" style="color: var(--text-muted-color, #6c757d);">{{ issue.student.roll_number }}</small>
+                        <small class="text-muted">{{ issue.student.roll_number }}</small>
                     </td>
                     <td data-label="Equipment">{{ issue.equipment.name }}</td>
                     <td data-label="Qty">{{ issue.quantity }}</td>
@@ -87,7 +87,7 @@
                         {% if issue.penalty_amount > 0 %}
                             <span class="badge bg-warning">₹{{ "%.2f"|format(issue.penalty_amount) }}</span>
                         {% else %}
-                            <span class="" style="color: var(--text-muted-color, #6c757d);">-</span>
+                            <span class="text-muted">-</span>
                         {% endif %}
                     </td>
                     <td data-label="Actions">
@@ -100,7 +100,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="8" class="text-center py-4" style="color: var(--text-muted-color, #6c757d);">No equipment issues found</td>
+                    <td colspan="8" class="text-center text-muted py-4">No equipment issues found</td>
                 </tr>
                 {% endfor %}
             </tbody>

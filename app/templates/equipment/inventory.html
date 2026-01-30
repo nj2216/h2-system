@@ -36,9 +36,9 @@
     </form>
 
     <!-- Equipment Table -->
-    <div class="table-responsive" style="background-color: var(--card-bg, #ffffff); border-radius: 0.25rem;">
-        <table class="table table-hover" style="color: var(--text-color, #000000); margin-bottom: 0;">
-            <thead class="" style="background-color: var(--table-header-bg, #f8f9fa); color: var(--text-color, #000000); border-bottom: 2px solid var(--border-color, #dee2e6);">
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
                 <tr>
                     <th data-label="Code">Code</th>
                     <th data-label="Name">Name</th>
@@ -54,7 +54,7 @@
             </thead>
             <tbody>
                 {% for equipment in equipments.items %}
-                <tr style="border-bottom: 1px solid var(--border-color, #dee2e6);">
+                <tr>
                     <td data-label="Code"><span class="badge bg-info">{{ equipment.equipment_code }}</span></td>
                     <td data-label="Name"><strong>{{ equipment.name }}</strong></td>
                     <td data-label="Category" class="d-none d-lg-table-cell">{{ equipment.category or '-' }}</td>
@@ -76,7 +76,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="10" class="text-center py-4" style="color: var(--text-muted-color, #6c757d);">No equipment found</td>
+                    <td colspan="10" class="text-center py-4">No equipment found</td>
                 </tr>
                 {% endfor %}
             </tbody>

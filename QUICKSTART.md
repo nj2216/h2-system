@@ -72,7 +72,15 @@ After login as admin, you can register other users with different roles:
   3. Office Approval
   4. Director Review (optional)
 
-### 6. Role-Based Dashboards
+### 6. Medical Equipment Management
+- **Navigation**: Equipment → Issue Equipment / View Issues
+- Issue equipment to students with expected return dates
+- Track equipment status (Issued, Overdue, Returned)
+- Process returns and verify equipment condition
+- Calculate penalties for overdue, damaged, or lost items
+- View penalty reports and collect payments
+
+### 7. Role-Based Dashboards
 - Each role has a customized dashboard
 - View statistics and pending items
 - Quick access to important functions
@@ -108,6 +116,39 @@ After login as admin, you can register other users with different roles:
 4. Add notes (optional)
 5. Click Approve or Reject
 6. Request moves to next approval stage
+
+### Check Equipment Status
+1. Go to Equipment → View Issues
+2. Filter by status, student, or equipment
+3. Click on issue to see details
+4. Process return if needed
+
+### Issue Equipment to Student
+1. Go to Equipment → Issue Equipment
+2. Select student and equipment
+3. Set expected return date
+4. Add notes (optional)
+5. Click "Issue Equipment"
+
+### Process Equipment Return
+1. Go to Equipment → View Issues
+2. Find unreturned equipment
+3. Click return button
+4. Select condition (Normal, Damaged, Lost)
+5. Add return notes
+6. Confirm return (auto-calculates penalty)
+
+### View Penalty Reports
+1. Login as Office staff
+2. Go to Equipment → Penalty Reports
+3. Filter by status or student
+4. Mark penalties as paid
+
+### Track Your Equipment (Students)
+1. Go to My Equipment
+2. View currently issued equipment
+3. Check return dates and overdue status
+4. View returned equipment and any penalties
 
 ### Check Medicine Stock
 1. Go to Stock → Medicine Inventory

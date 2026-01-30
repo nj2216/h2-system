@@ -45,13 +45,28 @@ A comprehensive Flask-based management system for health teams and hostel operat
 - Request status tracking
 - Support for sick leave and sick food requests
 
-### 7. **Role-Specific Dashboards**
-- **H2 Dashboard**: Student stats, medicine inventory, doctor visits
-- **Warden Dashboard**: Asset inventory, maintenance logs, student management
-- **Office Dashboard**: Request approvals, sick leave tracking
+### 7. **Medical Equipment Issue & Rental Management**
+- Equipment inventory tracking (non-consumable items)
+- Issue equipment to students with expected return dates
+- Track equipment issuance status (Issued, Overdue, Returned)
+- Equipment return processing with condition verification
+- Automatic penalty calculation for:
+  - Overdue equipment (daily penalty rate)
+  - Damaged equipment (50% of cost)
+  - Lost equipment (full replacement cost)
+- Penalty reports and payment tracking
+- Role-based workflows for H2, Doctor, Warden, Office
+- Student dashboard showing personal equipment
+- Responsive mobile-friendly interface
+- Dark mode support
+
+### 8. **Role-Specific Dashboards**
+- **H2 Dashboard**: Student stats, medicine inventory, doctor visits, equipment management
+- **Warden Dashboard**: Asset inventory, maintenance logs, student management, equipment issues
+- **Office Dashboard**: Request approvals, sick leave tracking, penalty reports
 - **Director Dashboard**: System overview, user management, statistics
-- **Student Dashboard**: Personal health history, prescriptions, requests
-- **Doctor Dashboard**: Visit records, prescriptions managed
+- **Student Dashboard**: Personal health history, prescriptions, requests, equipment tracking
+- **Doctor Dashboard**: Visit records, prescriptions managed, equipment issuance
 
 ## Tech Stack
 
@@ -88,6 +103,9 @@ h2sqrr/
 │   ├── sickleave/
 │   │   ├── __init__.py
 │   │   └── routes.py            # Sick leave workflow
+│   ├── equipment/
+│   │   ├── __init__.py
+│   │   └── routes.py            # Equipment management
 │   ├── dashboards/
 │   │   ├── __init__.py
 │   │   └── routes.py            # Role-based dashboards
@@ -99,6 +117,7 @@ h2sqrr/
 │   │   ├── stock/               # Stock templates
 │   │   ├── assets/              # Asset templates
 │   │   ├── sickleave/           # Sick leave templates
+│   │   ├── equipment/           # Equipment templates
 │   │   └── dashboards/          # Dashboard templates
 │   └── static/
 │       ├── css/style.css        # Custom CSS
@@ -200,8 +219,14 @@ The application uses SQLite database (`h2_system.db`) which is automatically cre
 - `POST /sickleave/<id>/warden-verify` - Warden verification
 - `POST /sickleave/<id>/office-approve` - Office approval
 
-### Dashboards
-- `GET /dashboard/` - Main dashboard (role-based)
+### Equipment Management
+- `GET /equipment/inventory` - View equipment stock (all roles)
+- `GET/POST /equipment/issue` - Issue equipment (H2, Doctor)
+- `GET /equipment/issues` - View all equipment issues (H2, Office, Warden)
+- `GET/POST /equipment/return/<id>` - Process equipment return (H2, Doctor)
+- `GET /equipment/penalties` - View penalty reports (Office)
+- `GET/POST /equipment/manage` - Add/edit equipment (H2)
+- `GET /equipment/student-dashboard` - View personal equipment (Student)
 
 ## Security Features
 
@@ -286,16 +311,21 @@ db.session.commit()
 
 ## Future Enhancements
 
-- [ ] Email notifications
-- [ ] SMS alerts for low stock
-- [ ] Report generation (PDF/Excel)
-- [ ] Advanced analytics
-- [ ] API documentation (Swagger/OpenAPI)
-- [ ] User activity logging
+- [ ] Equipment maintenance history tracking
+- [ ] Email notifications for overdue equipment
+- [ ] Export penalty reports to PDF/Excel
+- [ ] Bulk equipment uploads
+- [ ] Equipment condition photo uploads
+- [ ] Email notifications for approvals
+- [ ] SMS alerts for critical events
+- [ ] PDF/Excel report generation
+- [ ] Advanced analytics and charts
+- [ ] API documentation (Swagger)
+- [ ] Audit trail for all operations
 - [ ] Backup & restore functionality
 - [ ] Mobile app
 - [ ] Two-factor authentication
-- [ ] Audit trail
+- [ ] Performance optimization
 
 ## Contributing
 

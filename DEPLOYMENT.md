@@ -47,6 +47,7 @@ python cli.py seed_db
 - URL: http://localhost:5000
 - Username: admin
 - Password: admin
+- **Note**: Equipment system initializes with 12 sample items on first run
 
 ---
 
