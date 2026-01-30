@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Equipment Penalty Report - H2 System{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="bi bi-receipt"></i> Equipment Penalty Report</h2>
+        </div>
+        <div class="col-md-4 text-end">
+            <div class="alert alert-warning mb-0 text-dark" role="alert" style="background-color: var(--alert-warning-bg, #fff3cd); border-color: var(--alert-warning-border, #ffecb5);">
+                <strong>Total Unpaid:</strong> ₹{{ "%.2f"|format(total_penalty) }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Filters -->
+    <div class="mb-4">
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('equipment.penalty_report', filter='all') }}" 
+               class="btn btn-sm {% if filter_type == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                All ({{ issues.total }})
+            </a>
+            <a href="{{ url_for('equipment.penalty_report', filter='unpaid') }}" 
+               class="btn btn-sm {% if filter_type == 'unpaid' %}btn-danger{% else %}btn-outline-danger{% endif %}">
+                <i class="bi bi-clock-history"></i> Unpaid
+            </a>
+            <a href="{{ url_for('equipment.penalty_report', filter='paid') }}" 
+               class="btn btn-sm {% if filter_type == 'paid' %}btn-success{% else %}btn-outline-success{% endif %}">
+                <i class="bi bi-check-circle"></i> Paid
+            </a>
+        </div>
+    </div>
+
+    <!-- Penalties Table -->
+    <div class="table-responsive" style="background-color: var(--card-bg, #ffffff); border-radius: 0.25rem;">
+        <table class="table table-hover" style="color: var(--text-color, #000000);">
+            <thead class="" style="background-color: var(--table-header-bg, #f8f9fa); color: var(--text-color, #000000); border-bottom: 2px solid var(--border-color, #dee2e6);">
+                <tr>
+                    <th data-label="Student">Student</th>
+                    <th data-label="Equipment">Equipment</th>
+                    <th data-label="Return Reason">Return Reason</th>
+                    <th data-label="Days Overdue">Days Overdue</th>
+                    <th data-label="Penalty Amount">Penalty Amount</th>
+                    <th data-label="Status">Status</th>
+                    <th data-label="Actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for issue in issues.items %}
+                <tr style="border-bottom: 1px solid var(--border-color, #dee2e6);">
+                    <td data-label="Student">
+                        <strong>{{ issue.student.user.first_name }} {{ issue.student.user.last_name }}</strong>
+                        <br>
+                        <small class="" style="color: var(--text-muted-color, #6c757d);">{{ issue.student.roll_number }}</small>
+                    </td>
+                    <td data-label="Equipment">{{ issue.equipment.name }}</td>
+                    <td data-label="Return Reason">
+                        {% if issue.return_condition == 'damaged' %}
+                            <span class="badge bg-warning">Damaged</span>
+                        {% elif issue.return_condition == 'lost' %}
+                            <span class="badge bg-danger">Lost</span>
+                        {% elif issue.is_overdue and not issue.actual_return_date %}
+                            <span class="badge bg-danger">Overdue</span>
+                        {% else %}
+                            <span class="badge bg-secondary">Other</span>
+                        {% endif %}
+                    </td>
+                    <td data-label="Days Overdue">
+                        {% if issue.days_overdue > 0 %}
+                            {{ issue.days_overdue }} days
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td data-label="Penalty Amount">
+                        <strong>₹{{ "%.2f"|format(issue.penalty_amount) }}</strong>
+                    </td>
+                    <td data-label="Status">
+                        {% if issue.penalty_paid %}
+                            <span class="badge bg-success">Paid</span>
+                            <br>
+                            <small class="text-muted">{{ issue.penalty_paid_date.strftime('%Y-%m-%d') }}</small>
+                        {% else %}
+                            <span class="badge bg-danger">Unpaid</span>
+                        {% endif %}
+                    </td>
+                    <td data-label="Actions">
+                        {% if not issue.penalty_paid %}
+                        <form method="POST" action="{{ url_for('equipment.mark_penalty_paid', issue_id=issue.id) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-outline-success" onclick="return confirm('Mark penalty as paid?')">
+                                <i class="bi bi-check-circle"></i> Mark Paid
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center py-4" style="color: var(--text-muted-color, #6c757d);">No penalties found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if issues.pages > 1 %}
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if issues.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('equipment.penalty_report', page=issues.prev_num, filter=filter_type) }}">Previous</a>
+            </li>
+            {% endif %}
+            
+            {% for page_num in issues.iter_pages() %}
+                {% if page_num %}
+                    {% if page_num == issues.page %}
+                    <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+                    {% else %}
+                    <li class="page-item"><a class="page-link" href="{{ url_for('equipment.penalty_report', page=page_num, filter=filter_type) }}">{{ page_num }}</a></li>
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+            
+            {% if issues.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('equipment.penalty_report', page=issues.next_num, filter=filter_type) }}">Next</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

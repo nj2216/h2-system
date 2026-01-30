@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Issue Equipment - H2 System{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h2><i class="bi bi-arrow-right-circle"></i> Issue Medical Equipment</h2>
+            <p style="color: var(--text-muted-color, #6c757d);">Issue equipment to a student with expected return date</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST" class="needs-validation" novalidate>
+                <!-- Student Selection -->
+                <div class="mb-3">
+                    <label for="student_id" class="form-label">Student <span class="text-danger">*</span></label>
+                    <select name="student_id" id="student_id" class="form-select" required>
+                        <option value="">Select a student...</option>
+                        {% for student in students %}
+                        <option value="{{ student.id }}">{{ student.user.first_name }} {{ student.user.last_name }} ({{ student.roll_number }})</option>
+                        {% endfor %}
+                    </select>
+                    <div class="invalid-feedback">Please select a student.</div>
+                </div>
+
+                <!-- Equipment Selection -->
+                <div class="mb-3">
+                    <label for="equipment_id" class="form-label">Equipment <span class="text-danger">*</span></label>
+                    <select name="equipment_id" id="equipment_id" class="form-select" required>
+                        <option value="">Select equipment...</option>
+                        {% for equipment in equipments %}
+                        <option value="{{ equipment.id }}" data-available="{{ equipment.quantity_available }}">
+                            {{ equipment.name }} (Available: {{ equipment.quantity_available }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="invalid-feedback">Please select equipment.</div>
+                </div>
+
+                <!-- Quantity -->
+                <div class="mb-3">
+                    <label for="quantity" class="form-label">Quantity <span class="text-danger">*</span></label>
+                    <input type="number" name="quantity" id="quantity" class="form-control" style="background-color: var(--input-bg, #ffffff); color: var(--text-color, #000000); border-color: var(--border-color, #dee2e6);" min="1" value="1" required>
+                    <small id="available_qty" style="color: var(--text-muted-color, #6c757d);"></small>
+                    <div class="invalid-feedback">Please enter a valid quantity.</div>
+                </div>
+
+                <!-- Expected Return Days -->
+                <div class="mb-3">
+                    <label for="expected_return_days" class="form-label">Expected Return Days <span class="text-danger">*</span></label>
+                    <input type="number" name="expected_return_days" id="expected_return_days" class="form-control" style="background-color: var(--input-bg, #ffffff); color: var(--text-color, #000000); border-color: var(--border-color, #dee2e6);" min="1" value="7" required>
+                    <small id="return_date_info" style="color: var(--text-muted-color, #6c757d);"></small>
+                    <div class="invalid-feedback">Please enter valid days.</div>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-check-circle"></i> Issue Equipment
+                    </button>
+                    <a href="{{ url_for('equipment.issue_list') }}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const equipmentSelect = document.getElementById('equipment_id');
+    const quantityInput = document.getElementById('quantity');
+    const returnDaysInput = document.getElementById('expected_return_days');
+    const availableQtySpan = document.getElementById('available_qty');
+    const returnDateInfo = document.getElementById('return_date_info');
+
+    function updateAvailableQty() {
+        const selectedOption = equipmentSelect.options[equipmentSelect.selectedIndex];
+        const available = selectedOption.dataset.available;
+        if (available !== undefined) {
+            availableQtySpan.textContent = `Maximum available: ${available}`;
+            quantityInput.max = available;
+        }
+    }
+
+    function updateReturnDate() {
+        const days = parseInt(returnDaysInput.value) || 7;
+        const returnDate = new Date();
+        returnDate.setDate(returnDate.getDate() + days);
+        returnDateInfo.textContent = `Expected return: ${returnDate.toLocaleDateString()}`;
+    }
+
+    equipmentSelect.addEventListener('change', updateAvailableQty);
+    returnDaysInput.addEventListener('change', updateReturnDate);
+
+    // Initial update
+    updateAvailableQty();
+    updateReturnDate();
+
+    // Form validation
+    const form = document.querySelector('.needs-validation');
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+});
+</script>
+{% endblock %}

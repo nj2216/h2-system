@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Return Equipment - H2 System{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h2><i class="bi bi-box-seam"></i> Process Equipment Return</h2>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Issue Details -->
+            <div class="card mb-4" style="background-color: var(--card-bg, #ffffff); border-color: var(--border-color, #dee2e6); color: var(--text-color, #000000);">
+                <div class="card-header" style="background-color: var(--table-header-bg, #f8f9fa); border-color: var(--border-color, #dee2e6);">
+                    <h5 class="mb-0">Issue Details</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Student:</strong><br>{{ issue.student.user.first_name }} {{ issue.student.user.last_name }}<br>
+                            <small style="color: var(--text-muted-color, #6c757d);">{{ issue.student.roll_number }}</small></p>
+                            <p><strong>Equipment:</strong><br>{{ issue.equipment.name }}</p>
+                            <p><strong>Quantity:</strong><br>{{ issue.quantity }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Issued Date:</strong><br>{{ issue.issued_date.strftime('%Y-%m-%d %H:%M') }}</p>
+                            <p><strong>Expected Return:</strong><br>{{ issue.expected_return_date.strftime('%Y-%m-%d') }}</p>
+                            {% if issue.is_overdue %}
+                            <p><strong>Days Overdue:</strong><br><span class="badge bg-danger">{{ issue.days_overdue }} days</span></p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Return Form -->
+            <form method="POST" class="needs-validation" novalidate>
+                <!-- Condition -->
+                <div class="mb-3">
+                    <label class="form-label">Equipment Condition <span class="text-danger">*</span></label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="condition" id="normal" value="normal" required>
+                        <label class="form-check-label" for="normal">
+                            <i class="bi bi-check-circle text-success"></i> Normal (Good condition)
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="condition" id="damaged" value="damaged" required>
+                        <label class="form-check-label" for="damaged">
+                            <i class="bi bi-exclamation-triangle text-warning"></i> Damaged (50% penalty)
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="condition" id="lost" value="lost" required>
+                        <label class="form-check-label" for="lost">
+                            <i class="bi bi-x-circle text-danger"></i> Lost (Full replacement cost)
+                        </label>
+                    </div>
+                    <div class="invalid-feedback">Please select equipment condition.</div>
+                </div>
+
+                <!-- Notes -->
+                <div class="mb-3">
+                    <label for="notes" class="form-label">Return Notes (Optional)</label>
+                    <textarea name="notes" id="notes" class="form-control" style="background-color: var(--input-bg, #ffffff); color: var(--text-color, #000000); border-color: var(--border-color, #dee2e6);" rows="4" placeholder="Any additional notes about the return..."></textarea>
+                </div>
+
+                <!-- Penalty Summary -->
+                <div class="alert alert-info" id="penalty-summary" style="display:none; background-color: var(--alert-info-bg, #cfe2ff); border-color: var(--alert-info-border, #b6d4fe); color: var(--alert-info-text, #084298);">
+                    <h6>Penalty Breakdown:</h6>
+                    <ul class="mb-0" id="penalty-details"></ul>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="bi bi-check-circle"></i> Confirm Return
+                    </button>
+                    <a href="{{ url_for('equipment.issue_list') }}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const conditions = document.querySelectorAll('input[name="condition"]');
+    const penaltySummary = document.getElementById('penalty-summary');
+    const penaltyDetails = document.getElementById('penalty-details');
+    
+    const equipment = {
+        daily_penalty: {{ issue.equipment.daily_penalty }},
+        unit_cost: {{ issue.equipment.unit_cost }}
+    };
+    
+    const issue = {
+        quantity: {{ issue.quantity }},
+        days_overdue: {{ issue.days_overdue }},
+        expected_return: new Date('{{ issue.expected_return_date.strftime('%Y-%m-%d') }}')
+    };
+
+    function calculatePenalty() {
+        const selectedCondition = document.querySelector('input[name="condition"]:checked');
+        if (!selectedCondition) {
+            penaltySummary.style.display = 'none';
+            return;
+        }
+
+        let totalPenalty = 0;
+        let details = [];
+
+        const condition = selectedCondition.value;
+
+        // Overdue penalty
+        if (issue.days_overdue > 0) {
+            const overduePenalty = issue.days_overdue * equipment.daily_penalty * issue.quantity;
+            totalPenalty += overduePenalty;
+            details.push(`<li>Overdue (${issue.days_overdue} days × ₹${equipment.daily_penalty} × ${issue.quantity}): ₹${overduePenalty.toFixed(2)}</li>`);
+        }
+
+        // Condition penalty
+        if (condition === 'damaged') {
+            const damagePenalty = equipment.unit_cost * issue.quantity * 0.5;
+            totalPenalty += damagePenalty;
+            details.push(`<li>Damage (50% of cost): ₹${damagePenalty.toFixed(2)}</li>`);
+        } else if (condition === 'lost') {
+            const lossPenalty = equipment.unit_cost * issue.quantity;
+            totalPenalty += lossPenalty;
+            details.push(`<li>Replacement Cost (Lost): ₹${lossPenalty.toFixed(2)}</li>`);
+        }
+
+        if (totalPenalty > 0) {
+            details.push(`<li><strong>Total Penalty: ₹${totalPenalty.toFixed(2)}</strong></li>`);
+            penaltyDetails.innerHTML = details.join('');
+            penaltySummary.style.display = 'block';
+        } else {
+            penaltySummary.style.display = 'none';
+        }
+    }
+
+    conditions.forEach(condition => {
+        condition.addEventListener('change', calculatePenalty);
+    });
+
+    // Form validation
+    const form = document.querySelector('.needs-validation');
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+    });
+});
+</script>
+{% endblock %}

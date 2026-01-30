@@ -65,6 +65,7 @@ def register_blueprints(app):
     from app.sickleave.routes import sickleave_bp
     from app.dashboards.routes import dashboards_bp
     from app.main.routes import main_bp
+    from app.equipment import equipment_bp
     
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -74,6 +75,7 @@ def register_blueprints(app):
     app.register_blueprint(assets_bp, url_prefix='/assets')
     app.register_blueprint(sickleave_bp, url_prefix='/sickleave')
     app.register_blueprint(dashboards_bp, url_prefix='/dashboard')
+    app.register_blueprint(equipment_bp)
 
 
 def register_error_handlers(app):

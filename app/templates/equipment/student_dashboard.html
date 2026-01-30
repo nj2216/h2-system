@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}My Equipment - H2 System{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="bi bi-capsule"></i> My Equipment</h2>
+    <p style="color: var(--text-muted-color, #6c757d);">View and track your issued medical equipment</p>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4 g-3">
+        <div class="col-md-4 col-sm-6 col-12">
+            <div class="card border-left-primary" style="background-color: var(--card-bg, #ffffff); color: var(--text-color, #000000); border-color: var(--border-color, #dee2e6);">
+                <div class="card-body">
+                    <h6 class="card-title text-primary">Active Issues</h6>
+                    <h3>{{ issued|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-sm-6 col-12">
+            <div class="card border-left-success" style="background-color: var(--card-bg, #ffffff); color: var(--text-color, #000000); border-color: var(--border-color, #dee2e6);">
+                <div class="card-body">
+                    <h6 class="card-title text-success">Returned</h6>
+                    <h3>{{ returned|length }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 col-sm-6 col-12">
+            <div class="card border-left-danger" style="background-color: var(--card-bg, #ffffff); color: var(--text-color, #000000); border-color: var(--border-color, #dee2e6);">
+                <div class="card-body">
+                    <h6 class="card-title text-danger">Pending Penalties</h6>
+                    <h3>₹{{ "%.2f"|format(total_penalty) }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Issues -->
+    <h4 class="mt-4"><i class="bi bi-exclamation-circle"></i> Currently Issued</h4>
+    {% if issued %}
+    <div class="table-responsive" style="background-color: var(--card-bg, #ffffff); border-radius: 0.25rem;">
+        <table class="table table-hover" style="color: var(--text-color, #000000); margin-bottom: 0;">
+            <thead class="" style="background-color: var(--table-header-bg, #f8f9fa); color: var(--text-color, #000000); border-bottom: 2px solid var(--border-color, #dee2e6);">
+                <tr>
+                    <th data-label="Equipment">Equipment</th>
+                    <th data-label="Qty" class="d-none d-sm-table-cell">Qty</th>
+                    <th data-label="Issued" class="d-none d-md-table-cell">Issued Date</th>
+                    <th data-label="Expected Return" class="d-none d-lg-table-cell">Expected Return</th>
+                    <th data-label="Status">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for issue in issued %}
+                <tr style="border-bottom: 1px solid var(--border-color, #dee2e6);">
+                    <td data-label="Equipment"><strong>{{ issue.equipment.name }}</strong></td>
+                    <td data-label="Qty" class="d-none d-sm-table-cell">{{ issue.quantity }}</td>
+                    <td data-label="Issued" class="d-none d-md-table-cell">{{ issue.issued_date.strftime('%Y-%m-%d') }}</td>
+                    <td data-label="Expected Return" class="d-none d-lg-table-cell">{{ issue.expected_return_date.strftime('%Y-%m-%d') }}</td>
+                    <td data-label="Status">
+                        {% if issue.is_overdue %}
+                            <span class="badge bg-danger">Overdue - {{ issue.days_overdue }} days</span>
+                        {% else %}
+                            <span class="badge bg-info">Issued</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info" role="alert" style="background-color: var(--alert-info-bg, #cfe2ff); border-color: var(--alert-info-border, #b6d4fe); color: var(--alert-info-text, #084298);">
+        <i class="bi bi-info-circle"></i> No active equipment issues
+    </div>
+    {% endif %}
+
+    <!-- Returned Issues -->
+    <h4 class="mt-5"><i class="bi bi-check-circle"></i> Returned Equipment</h4>
+    {% if returned %}
+    <div class="table-responsive" style="background-color: var(--card-bg, #ffffff); border-radius: 0.25rem;">
+        <table class="table table-hover" style="color: var(--text-color, #000000); margin-bottom: 0;">
+            <thead class="" style="background-color: var(--table-header-bg, #f8f9fa); color: var(--text-color, #000000); border-bottom: 2px solid var(--border-color, #dee2e6);">
+                <tr>
+                    <th data-label="Equipment">Equipment</th>
+                    <th data-label="Qty" class="d-none d-sm-table-cell">Qty</th>
+                    <th data-label="Issued" class="d-none d-md-table-cell">Issued Date</th>
+                    <th data-label="Returned" class="d-none d-lg-table-cell">Returned Date</th>
+                    <th data-label="Condition">Condition</th>
+                    <th data-label="Penalty">Penalty</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for issue in returned %}
+                <tr style="border-bottom: 1px solid var(--border-color, #dee2e6);">
+                    <td data-label="Equipment"><strong>{{ issue.equipment.name }}</strong></td>
+                    <td data-label="Qty" class="d-none d-sm-table-cell">{{ issue.quantity }}</td>
+                    <td data-label="Issued" class="d-none d-md-table-cell">{{ issue.issued_date.strftime('%Y-%m-%d') }}</td>
+                    <td data-label="Returned" class="d-none d-lg-table-cell">{{ issue.actual_return_date.strftime('%Y-%m-%d') }}</td>
+                    <td data-label="Condition">
+                        {% if issue.return_condition == 'normal' %}
+                            <span class="badge bg-success">Normal</span>
+                        {% elif issue.return_condition == 'damaged' %}
+                            <span class="badge bg-warning">Damaged</span>
+                        {% elif issue.return_condition == 'lost' %}
+                            <span class="badge bg-danger">Lost</span>
+                        {% endif %}
+                    </td>
+                    <td data-label="Penalty">
+                        {% if issue.penalty_amount > 0 %}
+                            <span class="badge bg-warning">₹{{ "%.2f"|format(issue.penalty_amount) }}</span>
+                            {% if issue.penalty_paid %}
+                                <br><small class="" style="color: var(--text-success, #198754);">✓ Paid</small>
+                            {% endif %}
+                        {% else %}
+                            <span class="" style="color: var(--text-muted-color, #6c757d);">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info" role="alert" style="background-color: var(--alert-info-bg, #cfe2ff); border-color: var(--alert-info-border, #b6d4fe); color: var(--alert-info-text, #084298);">
+        <i class="bi bi-info-circle"></i> No returned equipment yet
+    </div>
+    {% endif %}
+</div>
+
+<style>
+.border-left-primary {
+    border-left: 4px solid var(--primary-color, #0d6efd);
+}
+
+.border-left-success {
+    border-left: 4px solid var(--success-color, #198754);
+}
+
+.border-left-danger {
+    border-left: 4px solid var(--danger-color, #dc3545);
+}
+</style>
+{% endblock %}

@@ -54,22 +54,29 @@
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('health.visits_list') }}">Doctor Visits</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('health.prescriptions_list') }}">Prescriptions</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('stock.inventory') }}">Medicine Stock</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('equipment.inventory') }}">Equipment</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('sickleave.requests_list') }}">Sick Leave</a></li>
                         {% elif current_user.role == 'Warden' %}
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('students.students_list') }}">Students</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('assets.assets_list') }}">Assets</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('equipment.issue_list') }}">Equipment</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('sickleave.requests_list') }}">Sick Leave</a></li>
                         {% elif current_user.role == 'Office' %}
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('equipment.penalty_report') }}">Equipment Penalties</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('sickleave.requests_list') }}">Sick Leave</a></li>
                         {% elif current_user.role == 'Director' %}
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('students.students_list') }}">Students</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.users_list') }}">Users</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('health.visits_list') }}">Health</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('stock.inventory') }}">Stock</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('equipment.inventory') }}">Equipment</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('assets.assets_list') }}">Assets</a></li>
                         {% elif current_user.role == 'Doctor' %}
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('health.visits_list') }}">Doctor Visits</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ url_for('health.prescriptions_list') }}">Prescriptions</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('equipment.issue_equipment') }}">Issue Equipment</a></li>
+                        {% elif current_user.role == 'Student' %}
+                            <li class="nav-item"><a class="nav-link" href="{{ url_for('equipment.student_dashboard') }}">My Equipment</a></li>
                         {% endif %}
                     {% endif %}
                     

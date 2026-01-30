@@ -5,7 +5,7 @@ Entry point for the Flask application
 import os
 from app import create_app, db
 from config import Config
-from app.models import User, Student, DoctorVisit, Prescription, Medicine, Asset, MaintenanceLog, SickLeaveRequest
+from app.models import User, Student, DoctorVisit, Prescription, Medicine, Asset, MaintenanceLog, SickLeaveRequest, MedicalEquipment
 
 
 def create_default_users():
@@ -91,6 +91,133 @@ def create_default_users():
         print("  doctor / doctor (Doctor)")
 
 
+def create_sample_equipment():
+    """Create sample medical equipment"""
+    sample_equipment = [
+        {
+            'name': 'Crepe Bandage (5cm)',
+            'equipment_code': 'CB-5CM',
+            'category': 'Support',
+            'quantity_available': 20,
+            'unit_cost': 50.00,
+            'daily_penalty': 5.00,
+            'location': 'H2 Storage A'
+        },
+        {
+            'name': 'Crepe Bandage (10cm)',
+            'equipment_code': 'CB-10CM',
+            'category': 'Support',
+            'quantity_available': 15,
+            'unit_cost': 75.00,
+            'daily_penalty': 7.50,
+            'location': 'H2 Storage A'
+        },
+        {
+            'name': 'Hot Pack (Electric)',
+            'equipment_code': 'HP-ELEC',
+            'category': 'Thermal',
+            'quantity_available': 10,
+            'unit_cost': 500.00,
+            'daily_penalty': 25.00,
+            'location': 'H2 Storage B'
+        },
+        {
+            'name': 'Ice Pack Gel',
+            'equipment_code': 'IP-GEL',
+            'category': 'Thermal',
+            'quantity_available': 12,
+            'unit_cost': 150.00,
+            'daily_penalty': 10.00,
+            'location': 'H2 Storage B'
+        },
+        {
+            'name': 'Knee Support Brace',
+            'equipment_code': 'KSB-UNI',
+            'category': 'Support',
+            'quantity_available': 8,
+            'unit_cost': 300.00,
+            'daily_penalty': 20.00,
+            'location': 'H2 Storage C'
+        },
+        {
+            'name': 'Elbow Support Brace',
+            'equipment_code': 'ESB-UNI',
+            'category': 'Support',
+            'quantity_available': 8,
+            'unit_cost': 250.00,
+            'daily_penalty': 15.00,
+            'location': 'H2 Storage C'
+        },
+        {
+            'name': 'Ankle Support Wrap',
+            'equipment_code': 'ASW-UNI',
+            'category': 'Support',
+            'quantity_available': 15,
+            'unit_cost': 200.00,
+            'daily_penalty': 12.00,
+            'location': 'H2 Storage C'
+        },
+        {
+            'name': 'Back Support Belt',
+            'equipment_code': 'BSB-MED',
+            'category': 'Support',
+            'quantity_available': 6,
+            'unit_cost': 400.00,
+            'daily_penalty': 20.00,
+            'location': 'H2 Storage C'
+        },
+        {
+            'name': 'Neck Collar',
+            'equipment_code': 'NC-SOFT',
+            'category': 'Support',
+            'quantity_available': 10,
+            'unit_cost': 350.00,
+            'daily_penalty': 15.00,
+            'location': 'H2 Storage D'
+        },
+        {
+            'name': 'TENS Machine',
+            'equipment_code': 'TENS-001',
+            'category': 'Device',
+            'quantity_available': 3,
+            'unit_cost': 2000.00,
+            'daily_penalty': 100.00,
+            'location': 'H2 Storage D'
+        },
+        {
+            'name': 'Digital Thermometer',
+            'equipment_code': 'THERM-DIG',
+            'category': 'Device',
+            'quantity_available': 5,
+            'unit_cost': 300.00,
+            'daily_penalty': 15.00,
+            'location': 'H2 Storage D'
+        },
+        {
+            'name': 'Blood Pressure Monitor',
+            'equipment_code': 'BPM-AUTO',
+            'category': 'Device',
+            'quantity_available': 2,
+            'unit_cost': 1500.00,
+            'daily_penalty': 75.00,
+            'location': 'H2 Storage D'
+        }
+    ]
+    
+    created_count = 0
+    for equipment_data in sample_equipment:
+        equipment = MedicalEquipment.query.filter_by(equipment_code=equipment_data['equipment_code']).first()
+        
+        if not equipment:
+            equipment = MedicalEquipment(**equipment_data)
+            db.session.add(equipment)
+            created_count += 1
+    
+    if created_count > 0:
+        db.session.commit()
+        print(f"✓ Created {created_count} sample medical equipment items")
+
+
 if __name__ == '__main__':
     # Create Flask app
     app = create_app(os.environ.get('FLASK_ENV', 'development'))
@@ -99,6 +226,7 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         create_default_users()
+        create_sample_equipment()
     
     # Run development server
     debug = os.environ.get('FLASK_DEBUG', True)

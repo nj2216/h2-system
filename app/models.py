@@ -274,3 +274,124 @@ class SickLeaveRequest(db.Model):
     
     def __repr__(self):
         return f'<SickLeaveRequest {self.id} - {self.request_type}>'
+
+
+class MedicalEquipment(db.Model):
+    """Medical equipment inventory (non-consumable items)"""
+    __tablename__ = 'medical_equipments'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)  # Crepe Band, Hot Pack, Ice Pack, etc.
+    equipment_code = db.Column(db.String(50), unique=True, nullable=False, index=True)
+    category = db.Column(db.String(100))  # Support, Thermal, Device, etc.
+    description = db.Column(db.Text)
+    quantity_available = db.Column(db.Integer, default=0)
+    quantity_issued = db.Column(db.Integer, default=0)
+    quantity_damaged = db.Column(db.Integer, default=0)
+    quantity_lost = db.Column(db.Integer, default=0)
+    unit_cost = db.Column(db.Float)
+    location = db.Column(db.String(100))  # Storage location
+    daily_penalty = db.Column(db.Float, default=0.0)  # Penalty per day if not returned on time
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    issues = db.relationship('EquipmentIssue', backref='equipment', cascade='all, delete-orphan')
+    
+    @property
+    def total_quantity(self):
+        """Total equipment quantity"""
+        return self.quantity_available + self.quantity_issued + self.quantity_damaged + self.quantity_lost
+    
+    def __repr__(self):
+        return f'<MedicalEquipment {self.equipment_code} - {self.name}>'
+
+
+class EquipmentIssue(db.Model):
+    """Equipment issue/rental record"""
+    __tablename__ = 'equipment_issues'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    equipment_id = db.Column(db.Integer, db.ForeignKey('medical_equipments.id'), nullable=False)
+    student_id = db.Column(db.Integer, db.ForeignKey('students.id'), nullable=False)
+    issued_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)  # H2 or Doctor
+    verified_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))  # H2 who verified return
+    
+    # Issue details
+    quantity = db.Column(db.Integer, default=1, nullable=False)
+    issued_date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    expected_return_date = db.Column(db.DateTime, nullable=False)
+    
+    # Return details
+    actual_return_date = db.Column(db.DateTime)
+    return_condition = db.Column(db.String(50))  # 'normal', 'damaged', 'lost'
+    return_notes = db.Column(db.Text)
+    
+    # Penalty tracking
+    is_overdue = db.Column(db.Boolean, default=False)
+    days_overdue = db.Column(db.Integer, default=0)
+    penalty_amount = db.Column(db.Float, default=0.0)
+    penalty_paid = db.Column(db.Boolean, default=False)
+    penalty_paid_date = db.Column(db.DateTime)
+    
+    status = db.Column(db.String(50), default='Issued')  # Issued, Overdue, Returned, Defaulted
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    student = db.relationship('Student', backref='equipment_issues')
+    issued_by = db.relationship('User', foreign_keys=[issued_by_id], backref='equipment_issues_issued')
+    verified_by = db.relationship('User', foreign_keys=[verified_by_id], backref='equipment_issues_verified')
+    
+    def mark_as_overdue(self):
+        """Mark issue as overdue and calculate penalty"""
+        from datetime import datetime, timedelta
+        
+        if not self.actual_return_date and self.expected_return_date < datetime.utcnow():
+            self.is_overdue = True
+            self.status = 'Overdue'
+            
+            days_over = (datetime.utcnow() - self.expected_return_date).days
+            self.days_overdue = max(1, days_over)  # At least 1 day
+            
+            equipment = MedicalEquipment.query.get(self.equipment_id)
+            self.penalty_amount = self.days_overdue * equipment.daily_penalty * self.quantity
+            
+            db.session.commit()
+    
+    def process_return(self, condition, notes=''):
+        """Process equipment return"""
+        from datetime import datetime
+        
+        self.actual_return_date = datetime.utcnow()
+        self.return_condition = condition
+        self.return_notes = notes
+        
+        equipment = MedicalEquipment.query.get(self.equipment_id)
+        
+        # Update equipment quantities
+        equipment.quantity_issued -= self.quantity
+        
+        if condition == 'normal':
+            equipment.quantity_available += self.quantity
+            self.status = 'Returned'
+        elif condition == 'damaged':
+            equipment.quantity_damaged += self.quantity
+            self.status = 'Returned'
+            self.penalty_amount = equipment.unit_cost * self.quantity * 0.5  # 50% penalty for damage
+        elif condition == 'lost':
+            equipment.quantity_lost += self.quantity
+            self.status = 'Returned'
+            self.penalty_amount = equipment.unit_cost * self.quantity  # Full replacement cost
+        
+        # Calculate overdue penalty
+        if self.actual_return_date > self.expected_return_date:
+            days_over = (self.actual_return_date - self.expected_return_date).days
+            days_over = max(1, days_over)
+            self.penalty_amount += days_over * equipment.daily_penalty * self.quantity
+        
+        self.is_overdue = False
+        db.session.commit()
+    
+    def __repr__(self):
+        return f'<EquipmentIssue {self.id} - Student {self.student_id}>'

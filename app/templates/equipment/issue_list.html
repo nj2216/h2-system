@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Equipment Issues - H2 System{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="bi bi-list-check"></i> Equipment Issues</h2>
+        </div>
+        <div class="col-md-4 text-end">
+            {% if current_user.role in ['H2', 'Doctor'] %}
+            <a href="{{ url_for('equipment.issue_equipment') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> New Issue
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Status Filters -->
+    <div class="mb-4">
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('equipment.issue_list', status='all') }}" 
+               class="btn btn-sm {% if status_filter == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                All
+            </a>
+            <a href="{{ url_for('equipment.issue_list', status='Issued') }}" 
+               class="btn btn-sm {% if status_filter == 'Issued' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                <i class="bi bi-exclamation-circle"></i> Issued
+            </a>
+            <a href="{{ url_for('equipment.issue_list', status='Overdue') }}" 
+               class="btn btn-sm {% if status_filter == 'Overdue' %}btn-danger{% else %}btn-outline-danger{% endif %}">
+                <i class="bi bi-clock-history"></i> Overdue
+            </a>
+            <a href="{{ url_for('equipment.issue_list', status='Returned') }}" 
+               class="btn btn-sm {% if status_filter == 'Returned' %}btn-success{% else %}btn-outline-success{% endif %}">
+                <i class="bi bi-check-circle"></i> Returned
+            </a>
+        </div>
+    </div>
+
+    <!-- Search -->
+    <form method="GET" class="mb-4">
+        <div class="input-group">
+            <input type="text" name="search" class="form-control" placeholder="Search by student or equipment..." value="{{ search or '' }}">
+            <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+        </div>
+    </form>
+
+    <!-- Issues Table -->
+    <div class="table-responsive" style="background-color: var(--card-bg, #ffffff); border-radius: 0.25rem;">
+        <table class="table table-hover" style="color: var(--text-color, #000000);">
+            <thead class="" style="background-color: var(--table-header-bg, #f8f9fa); color: var(--text-color, #000000); border-bottom: 2px solid var(--border-color, #dee2e6);">
+                <tr>
+                    <th data-label="Student">Student</th>
+                    <th data-label="Equipment">Equipment</th>
+                    <th data-label="Qty">Qty</th>
+                    <th data-label="Issued Date">Issued Date</th>
+                    <th data-label="Expected Return">Expected Return</th>
+                    <th data-label="Status">Status</th>
+                    <th data-label="Penalty">Penalty</th>
+                    <th data-label="Actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for issue in issues.items %}
+                <tr style="border-bottom: 1px solid var(--border-color, #dee2e6);">
+                    <td data-label="Student">
+                        <strong>{{ issue.student.user.first_name }} {{ issue.student.user.last_name }}</strong>
+                        <br>
+                        <small class="" style="color: var(--text-muted-color, #6c757d);">{{ issue.student.roll_number }}</small>
+                    </td>
+                    <td data-label="Equipment">{{ issue.equipment.name }}</td>
+                    <td data-label="Qty">{{ issue.quantity }}</td>
+                    <td data-label="Issued Date">{{ issue.issued_date.strftime('%Y-%m-%d') }}</td>
+                    <td data-label="Expected Return">{{ issue.expected_return_date.strftime('%Y-%m-%d') }}</td>
+                    <td data-label="Status">
+                        {% if issue.status == 'Issued' %}
+                            <span class="badge bg-info">Issued</span>
+                        {% elif issue.status == 'Overdue' %}
+                            <span class="badge bg-danger">Overdue - {{ issue.days_overdue }} days</span>
+                        {% elif issue.status == 'Returned' %}
+                            <span class="badge bg-success">Returned</span>
+                        {% endif %}
+                    </td>
+                    <td data-label="Penalty">
+                        {% if issue.penalty_amount > 0 %}
+                            <span class="badge bg-warning">₹{{ "%.2f"|format(issue.penalty_amount) }}</span>
+                        {% else %}
+                            <span class="" style="color: var(--text-muted-color, #6c757d);">-</span>
+                        {% endif %}
+                    </td>
+                    <td data-label="Actions">
+                        {% if issue.status != 'Returned' and current_user.role in ['H2', 'Doctor'] %}
+                        <a href="{{ url_for('equipment.return_equipment', issue_id=issue.id) }}" class="btn btn-sm btn-outline-success" title="Process Return">
+                            <i class="bi bi-check-circle"></i>
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center py-4" style="color: var(--text-muted-color, #6c757d);">No equipment issues found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if issues.pages > 1 %}
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if issues.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('equipment.issue_list', page=issues.prev_num, status=status_filter) }}">Previous</a>
+            </li>
+            {% endif %}
+            
+            {% for page_num in issues.iter_pages() %}
+                {% if page_num %}
+                    {% if page_num == issues.page %}
+                    <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+                    {% else %}
+                    <li class="page-item"><a class="page-link" href="{{ url_for('equipment.issue_list', page=page_num, status=status_filter) }}">{{ page_num }}</a></li>
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+            
+            {% if issues.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('equipment.issue_list', page=issues.next_num, status=status_filter) }}">Next</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
