@@ -3,22 +3,105 @@
 {% block title %}Medicine Inventory - H2 System{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-md-8">
-        <h2><i class="bi bi-capsule"></i> Medicine Inventory</h2>
-    </div>
-    <div class="col-md-4 text-end">
-        {% if current_user.role in ['H2', 'Director'] %}
-        <a href="{{ url_for('stock.add_medicine') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Add Medicine
-        </a>
-        <a href="{{ url_for('stock.bulk_upload_medicines') }}" class="btn btn-success">
-            <i class="bi bi-cloud-upload"></i> Bulk Upload
-        </a>
-        {% endif %}
-        <a href="{{ url_for('stock.low_stock_alerts') }}" class="btn btn-warning">
-            <i class="bi bi-exclamation-triangle"></i> Low Stock
-        </a>
+<style>
+    .inventory-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .med-row {
+        border-left: 4px solid var(--bs-border-color);
+        transition: all 0.2s ease;
+    }
+
+    .med-row:hover {
+        background-color: #f8f9fa;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .med-row.low-stock {
+        border-left-color: var(--bs-danger);
+        background-color: #fff5f5;
+    }
+
+    .med-row.low-stock:hover {
+        background-color: #ffe5e5;
+    }
+
+    .med-row.expiring-soon {
+        border-left-color: var(--bs-warning);
+        background-color: #fffbf0;
+    }
+
+    .stock-badge {
+        display: inline-block;
+        padding: 0.5rem 0.75rem;
+        border-radius: 0.25rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .stock-badge.ok {
+        background-color: #d1fae5;
+        color: #065f46;
+    }
+
+    .stock-badge.low {
+        background-color: #fee2e2;
+        color: #991b1b;
+    }
+
+    .stock-badge.critical {
+        background-color: #fecaca;
+        color: #7f1d1d;
+    }
+
+    .batch-count {
+        display: inline-block;
+        background-color: #dbeafe;
+        color: #1e40af;
+        padding: 0.25rem 0.5rem;
+        border-radius: 2rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .expiry-info {
+        font-size: 0.85rem;
+        color: #6b7280;
+    }
+
+    .expiry-info.warning {
+        color: #b45309;
+    }
+
+    .expiry-info.danger {
+        color: #991b1b;
+    }
+</style>
+
+<div class="inventory-header">
+    <div class="row">
+        <div class="col-md-8">
+            <h2 class="mb-2"><i class="bi bi-capsule"></i> Medicine Inventory</h2>
+            <p class="mb-0" style="opacity: 0.95;">FEFO (First-Expire-First-Out) Batch Tracking System</p>
+        </div>
+        <div class="col-md-4 text-end">
+            {% if current_user.role in ['H2', 'Director'] %}
+            <a href="{{ url_for('stock.add_medicine') }}" class="btn btn-light btn-sm me-2">
+                <i class="bi bi-plus-circle"></i> Add Medicine
+            </a>
+            <a href="{{ url_for('stock.bulk_upload_medicines') }}" class="btn btn-light btn-sm me-2">
+                <i class="bi bi-cloud-upload"></i> Bulk Upload
+            </a>
+            {% endif %}
+            <a href="{{ url_for('stock.low_stock_alerts') }}" class="btn btn-warning btn-sm">
+                <i class="bi bi-exclamation-triangle"></i> Alerts
+            </a>
+        </div>
     </div>
 </div>
 
@@ -27,10 +110,12 @@
         <form method="get" class="mb-3">
             <div class="row">
                 <div class="col-md-8">
-                    <input type="text" class="form-control" placeholder="Search medicine..." name="search" value="{{ search }}">
+                    <input type="text" class="form-control" placeholder="Search medicine by name, dosage, or generic name..." name="search" value="{{ search }}">
                 </div>
                 <div class="col-md-4">
-                    <button class="btn btn-primary w-100" type="submit"><i class="bi bi-search"></i></button>
+                    <button class="btn btn-primary w-100" type="submit">
+                        <i class="bi bi-search"></i> Search
+                    </button>
                 </div>
             </div>
         </form>
@@ -43,35 +128,101 @@
             <table class="table table-hover">
                 <thead class="table-dark">
                     <tr>
-                        <th>Medicine Name</th>
+                        <th>Medicine</th>
                         <th>Dosage</th>
-                        <th>Stock</th>
-                        <th>Min Level</th>
+                        <th>Total Stock</th>
+                        <th>Batches</th>
+                        <th>Next Expiry</th>
                         <th>Status</th>
                         <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for medicine in medicines.items %}
-                    <tr>
-                        <td data-label="Name"><strong>{{ medicine.name }}</strong></td>
+                    {% set total_qty = medicine.total_batch_quantity %}
+                    {% set is_low = total_qty <= medicine.min_stock_level %}
+                    {% set oldest_batch = medicine.batches|selectattr('is_expired', 'equalto', false)|sort(attribute='expiry_date')|first %}
+                    <tr class="med-row {% if is_low %}low-stock{% elif oldest_batch and oldest_batch.days_to_expiry < 30 %}expiring-soon{% endif %}">
+                        <td data-label="Name">
+                            <strong>{{ medicine.name }}</strong>
+                            <br>
+                            <small class="text-muted">{{ medicine.generic_name or 'No generic name' }}</small>
+                        </td>
                         <td data-label="Dosage">{{ medicine.dosage }}</td>
-                        <td data-label="Stock">{{ medicine.quantity }}</td>
-                        <td data-label="Min Level">{{ medicine.min_stock_level }}</td>
-                        <td data-label="Status">
-                            {% if medicine.is_low_stock %}
-                                <span class="badge bg-danger">Low Stock</span>
+                        <td data-label="Stock">
+                            <div class="stock-badge {% if total_qty == 0 %}critical{% elif is_low %}low{% else %}ok{% endif %}">
+                                {{ total_qty }} / {{ medicine.min_stock_level }} min
+                            </div>
+                        </td>
+                        <td data-label="Batches">
+                            {% if medicine.batches|length > 0 %}
+                                <span class="batch-count">
+                                    <i class="bi bi-box-seam"></i> {{ medicine.batches|length }} batch(es)
+                                </span>
+                                {% set available_batches = medicine.batches|selectattr('is_expired', 'equalto', false)|list|length %}
+                                {% if available_batches < medicine.batches|length %}
+                                    <br>
+                                    <small class="text-danger">
+                                        <i class="bi bi-exclamation-triangle-fill"></i> 
+                                        {{ medicine.batches|length - available_batches }} expired
+                                    </small>
+                                {% endif %}
                             {% else %}
-                                <span class="badge bg-success">OK</span>
+                                <span class="badge bg-secondary">No batches</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Next Expiry">
+                            {% if oldest_batch %}
+                                <strong>{{ oldest_batch.expiry_date }}</strong>
+                                <br>
+                                {% if oldest_batch.days_to_expiry < 0 %}
+                                    <span class="expiry-info danger">
+                                        <i class="bi bi-x-circle"></i> EXPIRED
+                                    </span>
+                                {% elif oldest_batch.days_to_expiry < 7 %}
+                                    <span class="expiry-info danger">
+                                        <i class="bi bi-exclamation-triangle"></i> 
+                                        {{ oldest_batch.days_to_expiry }} days
+                                    </span>
+                                {% elif oldest_batch.days_to_expiry < 30 %}
+                                    <span class="expiry-info warning">
+                                        <i class="bi bi-clock"></i> 
+                                        {{ oldest_batch.days_to_expiry }} days
+                                    </span>
+                                {% else %}
+                                    <span class="expiry-info">
+                                        {{ oldest_batch.days_to_expiry }} days
+                                    </span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td data-label="Status">
+                            {% if total_qty == 0 %}
+                                <span class="badge bg-danger"><i class="bi bi-x-circle"></i> OUT OF STOCK</span>
+                            {% elif is_low %}
+                                <span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle"></i> LOW STOCK</span>
+                            {% elif oldest_batch and oldest_batch.days_to_expiry < 7 %}
+                                <span class="badge bg-danger"><i class="bi bi-clock"></i> CRITICAL</span>
+                            {% elif oldest_batch and oldest_batch.days_to_expiry < 30 %}
+                                <span class="badge bg-warning text-dark"><i class="bi bi-clock"></i> WARNING</span>
+                            {% else %}
+                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> OK</span>
                             {% endif %}
                         </td>
                         <td data-label="Action">
-                            <a href="{{ url_for('stock.view_medicine', medicine_id=medicine.id) }}" class="btn btn-sm btn-primary"><i class="bi bi-eye"></i></a>
+                            <a href="{{ url_for('stock.view_medicine', medicine_id=medicine.id) }}" 
+                               class="btn btn-sm btn-primary" title="View details and batches">
+                                <i class="bi bi-eye"></i> Details
+                            </a>
                         </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="6" class="text-center text-muted">No medicines found</td>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            <i class="bi bi-inbox"></i> No medicines found
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -84,7 +235,7 @@
             <ul class="pagination justify-content-center mt-4">
                 {% if medicines.has_prev %}
                 <li class="page-item">
-                    <a class="page-link" href="{{ url_for('stock.inventory', page=medicines.prev_num, search=search, low_stock=show_low) }}">Previous</a>
+                    <a class="page-link" href="{{ url_for('stock.inventory', page=medicines.prev_num, search=search) }}">Previous</a>
                 </li>
                 {% endif %}
                 
@@ -96,7 +247,7 @@
                         </li>
                         {% else %}
                         <li class="page-item">
-                            <a class="page-link" href="{{ url_for('stock.inventory', page=page_num, search=search, low_stock=show_low) }}">{{ page_num }}</a>
+                            <a class="page-link" href="{{ url_for('stock.inventory', page=page_num, search=search) }}">{{ page_num }}</a>
                         </li>
                         {% endif %}
                     {% endif %}
@@ -104,7 +255,7 @@
                 
                 {% if medicines.has_next %}
                 <li class="page-item">
-                    <a class="page-link" href="{{ url_for('stock.inventory', page=medicines.next_num, search=search, low_stock=show_low) }}">Next</a>
+                    <a class="page-link" href="{{ url_for('stock.inventory', page=medicines.next_num, search=search) }}">Next</a>
                 </li>
                 {% endif %}
             </ul>

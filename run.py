@@ -5,7 +5,7 @@ Entry point for the Flask application
 import os
 from app import create_app, db
 from config import Config
-from app.models import User, Student, DoctorVisit, Prescription, Medicine, Asset, MaintenanceLog, SickLeaveRequest, MedicalEquipment
+from app.models import User, Student, DoctorVisit, Prescription, Medicine, Asset, MaintenanceLog, SickLeaveRequest, MedicalEquipment, MedicineBatch, BatchDispensing
 
 
 def create_default_users():

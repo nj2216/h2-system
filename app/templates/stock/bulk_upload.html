@@ -13,13 +13,16 @@
                 
                 <div class="card-body">
                     <div class="alert alert-info mb-4">
-                        <strong>Instructions:</strong>
-                        <ul class="mb-0 mt-2">
-                            <li>Upload a CSV file with medicine stock data</li>
-                            <li>Required columns: <code>name</code>, <code>quantity</code></li>
-                            <li>Optional columns: <code>generic_name</code>, <code>dosage</code>, <code>min_stock_level</code>, <code>unit</code>, <code>expiry_date</code> (YYYY-MM-DD), <code>supplier</code>, <code>cost_per_unit</code>, <code>location</code></li>
-                            <li>If medicine already exists, quantity will be added to existing stock</li>
-                            <li>If medicine doesn't exist, it will be created</li>
+                        <strong><i class=\"bi bi-info-circle\"></i> Instructions (FEFO Batch Mode):</strong>
+                        <ul class=\"mb-0 mt-2\">
+                            <li>Upload a CSV file with medicine stock data with batch tracking</li>
+                            <li><strong>Required columns:</strong> <code>name</code>, <code>quantity</code>, <code>batch_number</code>, <code>shelf_location</code>, <code>expiry_date</code></li>
+                            <li><strong>Optional columns:</strong> <code>generic_name</code>, <code>dosage</code>, <code>min_stock_level</code>, <code>unit</code>, <code>supplier</code>, <code>cost_per_unit</code></li>
+                            <li>Each row creates or updates a <strong>specific batch</strong> (not aggregate quantity)</li>
+                            <li><code>expiry_date</code> format: YYYY-MM-DD (e.g., 2025-12-31)</li>
+                            <li><code>shelf_location</code> example: Shelf A1, Cold Storage 2, Cabinet B3</li>
+                            <li>If medicine doesn't exist, it will be created automatically</li>
+                            <li>FEFO (First-Expire-First-Out) automatically applies during dispensing</li>
                         </ul>
                     </div>
 
@@ -42,30 +45,32 @@
 
                     <div class="row">
                         <div class="col-md-6">
-                            <h6>Sample CSV Format:</h6>
-                            <pre class="bg-light p-3 rounded" style="font-size: 12px;">name,generic_name,dosage,quantity,min_stock_level,unit,expiry_date,supplier,cost_per_unit,location
-Paracetamol,Paracetamol,500mg,100,20,tablets,2025-12-31,Pharma Co,5.50,Shelf A1
-Ibuprofen,Ibuprofen,200mg,50,15,tablets,2025-11-30,Pharma Co,8.00,Shelf A2
-Amoxicillin,Amoxicillin,250mg,30,10,capsules,2025-10-15,MedSupply,12.00,Shelf B1</pre>
+                            <h6><i class="bi bi-box-seam"></i> Sample CSV Format (Batch Mode):</h6>
+                            <pre class="bg-light p-3 rounded" style="font-size: 11px;">name,generic_name,dosage,batch_number,quantity,shelf_location,expiry_date,min_stock_level,unit,supplier,cost_per_unit
+Paracetamol,Paracetamol,500mg,BATCH-2024-001,100,Shelf A1,2025-12-31,20,tablets,Pharma Co,5.50
+Paracetamol,Paracetamol,500mg,BATCH-2024-002,80,Shelf A2,2026-01-15,20,tablets,Pharma Co,5.50
+Ibuprofen,Ibuprofen,200mg,BATCH-2024-003,50,Cold Storage 1,2025-11-30,15,tablets,Pharma Co,8.00
+Amoxicillin,Amoxicillin,250mg,BATCH-2024-004,30,Cabinet B3,2025-10-15,10,capsules,MedSupply,12.00</pre>
                         </div>
 
                         <div class="col-md-6">
-                            <h6>Download Template:</h6>
+                            <h6><i class="bi bi-download"></i> Download Template:</h6>
                             <p>
                                 <a href="#" onclick="downloadTemplate()" class="btn btn-outline-secondary btn-sm">
-                                    <i class="bi bi-download"></i> Download CSV Template
+                                    <i class="bi bi-download"></i> Download CSV Template (Batch Mode)
                                 </a>
                             </p>
 
-                            <h6 class="mt-4">Features:</h6>
-                            <ul style="font-size: 14px;">
-                                <li>Validates quantity as positive integer</li>
-                                <li>Creates new medicines automatically</li>
-                                <li>Adds to existing medicine stock</li>
-                                <li>Records stock movements in audit trail</li>
-                                <li>Updates expiry dates and supplier info</li>
-                                <li>Detailed error reporting</li>
-                                <li>Batch processing with transaction support</li>
+                            <h6 class="mt-4"><i class="bi bi-star-fill"></i> Features:</h6>
+                            <ul style="font-size: 13px;">
+                                <li><strong>Batch Tracking:</strong> Each row = one batch with unique batch_number</li>
+                                <li><strong>Shelf Management:</strong> Physical location tracking per batch</li>
+                                <li><strong>FEFO Enforcement:</strong> Oldest expiry dates dispensed first automatically</li>
+                                <li><strong>Multi-Batch Support:</strong> Same medicine in multiple batches/locations</li>
+                                <li><strong>Expiry Priority:</strong> Critical for inventory optimization</li>
+                                <li><strong>Auto Medicine Creation:</strong> Creates medicine if doesn't exist</li>
+                                <li><strong>Full Audit Trail:</strong> Records all batch additions</li>
+                                <li><strong>Error Reporting:</strong> Detailed validation messages per row</li>
                             </ul>
                         </div>
                     </div>
@@ -77,18 +82,20 @@ Amoxicillin,Amoxicillin,250mg,30,10,capsules,2025-10-15,MedSupply,12.00,Shelf B1
 
 <script>
 function downloadTemplate() {
-    const csv = `name,generic_name,dosage,quantity,min_stock_level,unit,expiry_date,supplier,cost_per_unit,location
-Paracetamol,Paracetamol,500mg,100,20,tablets,2025-12-31,Pharma Co,5.50,Shelf A1
-Ibuprofen,Ibuprofen,200mg,50,15,tablets,2025-11-30,Pharma Co,8.00,Shelf A2
-Amoxicillin,Amoxicillin,250mg,30,10,capsules,2025-10-15,MedSupply,12.00,Shelf B1
-Aspirin,Acetylsalicylic Acid,100mg,200,30,tablets,2025-09-20,Pharma Co,3.00,Shelf A3
-Metformin,Metformin,500mg,75,25,tablets,2025-08-10,MedSupply,6.50,Shelf B2`;
+    const csv = `name,generic_name,dosage,batch_number,quantity,shelf_location,expiry_date,min_stock_level,unit,supplier,cost_per_unit
+Paracetamol,Paracetamol,500mg,BATCH-2024-001,100,Shelf A1,2025-12-31,20,tablets,Pharma Co,5.50
+Paracetamol,Paracetamol,500mg,BATCH-2024-002,80,Shelf A2,2026-01-15,20,tablets,Pharma Co,5.50
+Ibuprofen,Ibuprofen,200mg,BATCH-2024-003,50,Cold Storage 1,2025-11-30,15,tablets,Pharma Co,8.00
+Amoxicillin,Amoxicillin,250mg,BATCH-2024-004,30,Cabinet B3,2025-10-15,10,capsules,MedSupply,12.00
+Aspirin,Acetylsalicylic Acid,100mg,BATCH-2024-005,200,Shelf A3,2025-09-20,30,tablets,Pharma Co,3.00
+Metformin,Metformin,500mg,BATCH-2024-006,75,Shelf B2,2025-08-10,25,tablets,MedSupply,6.50
+Metformin,Metformin,500mg,BATCH-2024-007,60,Cold Storage 2,2025-09-05,25,tablets,MedSupply,6.50`;
 
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'medicine_stock_template.csv';
+    a.download = 'medicine_stock_batch_template.csv';
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);

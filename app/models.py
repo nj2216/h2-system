@@ -216,14 +216,83 @@ class Medicine(db.Model):
     
     # Relationships
     stock_movements = db.relationship('StockMovement', backref='medicine', cascade='all, delete-orphan')
+    batches = db.relationship('MedicineBatch', backref='medicine', cascade='all, delete-orphan')
     
     @property
     def is_low_stock(self):
-        """Check if medicine is below minimum stock level"""
-        return self.quantity <= self.min_stock_level
+        """Check if medicine is below minimum stock level (non-expired batches only)"""
+        return self.total_batch_quantity <= self.min_stock_level
+    
+    @property
+    def total_batch_quantity(self):
+        """Calculate total available quantity across all NON-EXPIRED batches"""
+        return sum(batch.available_quantity for batch in self.batches if not batch.is_expired)
+    
+    def get_fefo_batch(self):
+        """Get the oldest NON-EXPIRED batch with available stock (FEFO principle)"""
+        # Filter batches: must have available stock AND not be expired
+        available_batches = [b for b in self.batches if b.available_quantity > 0 and not b.is_expired]
+        if available_batches:
+            # Sort by expiry date (oldest first)
+            return sorted(available_batches, key=lambda b: (b.expiry_date or datetime.max.date(), b.created_at))[0]
+        return None
     
     def __repr__(self):
         return f'<Medicine {self.name}>'
+
+
+class MedicineBatch(db.Model):
+    """Track individual batches of medicine with shelf location and expiry"""
+    __tablename__ = 'medicine_batches'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    medicine_id = db.Column(db.Integer, db.ForeignKey('medicines.id'), nullable=False, index=True)
+    batch_number = db.Column(db.String(100), nullable=False, index=True)  # Manufacturer batch number
+    quantity = db.Column(db.Integer, nullable=False)  # Total quantity in batch
+    available_quantity = db.Column(db.Integer, nullable=False)  # Remaining available quantity
+    expiry_date = db.Column(db.Date, nullable=False, index=True)
+    shelf_location = db.Column(db.String(100), nullable=False)  # e.g., "Shelf A1", "Cold Storage 2"
+    cost_per_unit = db.Column(db.Float)
+    date_added = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    dispensings = db.relationship('BatchDispensing', backref='batch', cascade='all, delete-orphan')
+    
+    @property
+    def is_expired(self):
+        """Check if batch is expired"""
+        return self.expiry_date <= datetime.now().date()
+    
+    @property
+    def days_to_expiry(self):
+        """Calculate days remaining until expiry"""
+        delta = self.expiry_date - datetime.now().date()
+        return delta.days
+    
+    def __repr__(self):
+        return f'<MedicineBatch {self.batch_number} - {self.available_quantity}/{self.quantity}>'
+
+
+class BatchDispensing(db.Model):
+    """Record of batch used during medicine dispensing for traceability"""
+    __tablename__ = 'batch_dispensings'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    prescription_item_id = db.Column(db.Integer, db.ForeignKey('prescription_items.id'), nullable=False, index=True)
+    batch_id = db.Column(db.Integer, db.ForeignKey('medicine_batches.id'), nullable=False, index=True)
+    quantity_dispensed = db.Column(db.Integer, nullable=False)
+    dispensed_by_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    dispensed_at = db.Column(db.DateTime, default=datetime.utcnow)
+    notes = db.Column(db.Text)
+    
+    # Relationships
+    prescription_item = db.relationship('PrescriptionItem', backref='batch_dispensings')
+    dispensed_by = db.relationship('User', backref='batch_dispensings')
+    
+    def __repr__(self):
+        return f'<BatchDispensing Batch#{self.batch_id} - {self.quantity_dispensed} units>'
 
 
 class StockMovement(db.Model):

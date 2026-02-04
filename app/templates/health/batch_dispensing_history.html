@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Batch Dispensing History - {{ batch.batch_number }}{% endblock %}
+
+{% block content %}
+<style>
+    .dispensing-card {
+        border-left: 4px solid var(--bs-info);
+        margin-bottom: 1rem;
+    }
+
+    .dispensing-card.success {
+        border-left-color: var(--bs-success);
+    }
+
+    .dispensing-info {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .info-item {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .info-label {
+        font-weight: 600;
+        color: #666;
+        min-width: 150px;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+    }
+
+    .info-value {
+        color: var(--bs-body-color);
+        font-weight: 500;
+    }
+
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+    }
+
+    .quantity-bar {
+        background-color: #e9ecef;
+        border-radius: 0.5rem;
+        height: 8px;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+
+    .quantity-used {
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        height: 100%;
+        transition: width 0.3s ease;
+    }
+
+    .timeline {
+        position: relative;
+        padding-left: 2rem;
+    }
+
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 0.5rem;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background-color: #dee2e6;
+    }
+
+    .timeline-item {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -1.75rem;
+        top: 0.5rem;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: var(--bs-info);
+        border: 3px solid white;
+    }
+
+    .timeline-item.dispensed::before {
+        background-color: var(--bs-success);
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-10 offset-md-1">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="bi bi-clock-history"></i> Batch Dispensing History</h2>
+                    <p class="text-muted">Batch: <strong>{{ batch.batch_number }}</strong> | Medicine: <strong>{{ batch.medicine.name }}</strong></p>
+                </div>
+            </div>
+
+            <!-- Batch Information -->
+            <div class="dispensing-info">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <div class="info-label"><i class="bi bi-box-seam"></i> Batch Number</div>
+                            <div class="info-value">{{ batch.batch_number }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label"><i class="bi bi-geo-alt"></i> Shelf Location</div>
+                            <div class="info-value">{{ batch.shelf_location }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label"><i class="bi bi-calendar-event"></i> Expiry Date</div>
+                            <div class="info-value">
+                                {{ batch.expiry_date.strftime('%Y-%m-%d') }}
+                                {% if batch.is_expired %}
+                                <span class="badge bg-danger ms-2">EXPIRED</span>
+                                {% elif batch.days_to_expiry < 30 %}
+                                <span class="badge bg-warning ms-2">{{ batch.days_to_expiry }} days left</span>
+                                {% else %}
+                                <span class="badge bg-success ms-2">{{ batch.days_to_expiry }} days left</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="info-item">
+                            <div class="info-label"><i class="bi bi-capsule"></i> Medicine</div>
+                            <div class="info-value">
+                                {{ batch.medicine.name }} ({{ batch.medicine.generic_name or 'N/A' }})
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label"><i class="bi bi-building"></i> Total Quantity</div>
+                            <div class="info-value">{{ batch.quantity }} {{ batch.medicine.unit }}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label"><i class="bi bi-check-circle"></i> Available Quantity</div>
+                            <div class="info-value">{{ batch.available_quantity }} {{ batch.medicine.unit }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quantity Usage Bar -->
+                <div style="margin-top: 1rem;">
+                    <div class="info-item mb-2">
+                        <div class="info-label">Usage</div>
+                        <div class="info-value">
+                            Dispensed: <strong>{{ batch.quantity - batch.available_quantity }}</strong> / <strong>{{ batch.quantity }}</strong> units
+                        </div>
+                    </div>
+                    <div class="quantity-bar">
+                        <div class="quantity-used" style="width: {{ ((batch.quantity - batch.available_quantity) / batch.quantity * 100)|int }}%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dispensing History -->
+            {% if dispensings|length > 0 %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-list"></i> Dispensing Records ({{ dispensings|length }} total)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        {% for dispensing in dispensings %}
+                        <div class="timeline-item dispensed">
+                            <div class="card dispensing-card dispensed">
+                                <div class="card-header d-flex justify-content-between align-items-center" style="background-color: transparent; border-bottom: 1px solid var(--bs-border-color);">
+                                    <div>
+                                        <h6 class="mb-1">
+                                            <strong>Prescription #{{ dispensing.prescription_item.prescription.id }}</strong>
+                                        </h6>
+                                        <small class="text-muted">
+                                            Student: 
+                                            <strong>
+                                                {{ dispensing.prescription_item.prescription.student.user.first_name }} 
+                                                {{ dispensing.prescription_item.prescription.student.user.last_name }}
+                                            </strong>
+                                            ({{ dispensing.prescription_item.prescription.student.roll_number }})
+                                        </small>
+                                    </div>
+                                    <span class="status-badge bg-success">DISPENSED</span>
+                                </div>
+                                
+                                <div class="card-body">
+                                    <div class="row mb-3">
+                                        <div class="col-md-3">
+                                            <small class="text-muted">Dispensed Quantity</small>
+                                            <p class="mb-0"><strong>{{ dispensing.quantity_dispensed }} {{ dispensing.batch.medicine.unit }}</strong></p>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <small class="text-muted">Dispensed By</small>
+                                            <p class="mb-0"><strong>{{ dispensing.dispensed_by.username if dispensing.dispensed_by else 'Unknown' }}</strong></p>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <small class="text-muted">Dispensed At</small>
+                                            <p class="mb-0"><strong>{{ dispensing.dispensed_at.strftime('%Y-%m-%d %H:%M:%S') }}</strong></p>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <small class="text-muted">Days Ago</small>
+                                            <p class="mb-0"><strong>{{ ((now - dispensing.dispensed_at).days) if now else 'N/A' }} days</strong></p>
+                                        </div>
+                                    </div>
+
+                                    {% if dispensing.prescription_item.instructions %}
+                                    <div class="alert alert-info mb-0 mt-2">
+                                        <small>
+                                            <strong>Instructions:</strong> {{ dispensing.prescription_item.instructions }}
+                                        </small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> <strong>No Dispensing Records:</strong>
+                This batch has not been dispensed yet.
+            </div>
+            {% endif %}
+
+            <!-- Actions -->
+            <div class="d-flex gap-2 mt-4 flex-wrap">
+                <a href="{{ url_for('health.view_medicine_batches', medicine_id=batch.medicine_id) }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Batches
+                </a>
+                <a href="{{ url_for('stock.view_medicine', medicine_id=batch.medicine_id) }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-box"></i> View Medicine
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

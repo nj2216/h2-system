@@ -3,75 +3,137 @@
 {% block title %}Add Medicine{% endblock %}
 
 {% block content %}
+<style>
+    .batch-section {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-left: 4px solid var(--bs-info);
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        margin-top: 2rem;
+    }
+
+    .batch-section h5 {
+        color: var(--bs-info);
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .shelf-input-group {
+        background-color: white;
+        border: 1px solid var(--bs-border-color);
+        border-radius: 0.375rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .info-box {
+        background-color: #e7f3ff;
+        border-left: 4px solid var(--bs-info);
+        padding: 0.75rem;
+        border-radius: 0.25rem;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+    }
+</style>
+
 <div class="container mt-4">
     <div class="row">
         <div class="col-md-8 offset-md-2">
-            <h2>Add New Medicine</h2>
+            <h2><i class="bi bi-capsule"></i> Add New Medicine</h2>
             
             <form method="POST" class="needs-validation" novalidate>
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label for="name" class="form-label">Medicine Name</label>
-                        <input type="text" class="form-control" id="name" name="name" required>
-                        <div class="invalid-feedback">Please provide a medicine name.</div>
+                <!-- Basic Medicine Information -->
+                <div class="card mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Medicine Information</h5>
                     </div>
-                    <div class="col-md-6">
-                        <label for="generic_name" class="form-label">Generic Name</label>
-                        <input type="text" class="form-control" id="generic_name" name="generic_name">
-                    </div>
-                </div>
-                
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label for="dosage" class="form-label">Dosage</label>
-                        <input type="text" class="form-control" id="dosage" name="dosage" placeholder="e.g., 500mg" required>
-                        <div class="invalid-feedback">Please provide dosage.</div>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="unit" class="form-label">Unit</label>
-                        <input type="text" class="form-control" id="unit" name="unit" placeholder="e.g., tablets, ml" required>
-                        <div class="invalid-feedback">Please provide unit.</div>
-                    </div>
-                </div>
-                
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label for="quantity" class="form-label">Quantity</label>
-                        <input type="number" class="form-control" id="quantity" name="quantity" value="1" required>
-                        <div class="invalid-feedback">Please provide quantity.</div>
-                    </div>
-                    <div class="col-md-6">
-                        <label for="min_stock_level" class="form-label">Min Stock Level</label>
-                        <input type="number" class="form-control" id="min_stock_level" name="min_stock_level" value="10" required>
-                        <div class="invalid-feedback">Please provide min stock level.</div>
-                    </div>
-                </div>
-                
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label for="cost_per_unit" class="form-label">Cost Per Unit</label>
-                        <input type="number" class="form-control" id="cost_per_unit" name="cost_per_unit" step="0.01">
-                    </div>
-                    <div class="col-md-6">
-                        <label for="expiry_date" class="form-label">Expiry Date</label>
-                        <input type="date" class="form-control" id="expiry_date" name="expiry_date">
-                    </div>
-                </div>
-                
-                <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label for="supplier" class="form-label">Supplier</label>
-                        <input type="text" class="form-control" id="supplier" name="supplier">
-                    </div>
-                    <div class="col-md-6">
-                        <label for="location" class="form-label">Storage Location</label>
-                        <input type="text" class="form-control" id="location" name="location">
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="name" class="form-label">Medicine Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                                <div class="invalid-feedback">Please provide a medicine name.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="generic_name" class="form-label">Generic Name</label>
+                                <input type="text" class="form-control" id="generic_name" name="generic_name">
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="dosage" class="form-label">Dosage <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="dosage" name="dosage" placeholder="e.g., 500mg" required>
+                                <div class="invalid-feedback">Please provide dosage.</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="unit" class="form-label">Unit <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="unit" name="unit" placeholder="e.g., tablets, ml" required>
+                                <div class="invalid-feedback">Please provide unit.</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="cost_per_unit" class="form-label">Cost Per Unit (₹)</label>
+                                <input type="number" class="form-control" id="cost_per_unit" name="cost_per_unit" step="0.01">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="supplier" class="form-label">Supplier</label>
+                                <input type="text" class="form-control" id="supplier" name="supplier">
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="min_stock_level" class="form-label">Min Stock Level <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="min_stock_level" name="min_stock_level" value="10" required>
+                                <div class="invalid-feedback">Please provide min stock level.</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                
-                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+
+                <!-- Batch and Shelf Information -->
+                <div class="batch-section">
+                    <h5><i class="bi bi-box-seam"></i> Initial Stock Batch Details (FEFO)</h5>
+                    <div class="info-box">
+                        <i class="bi bi-info-circle"></i> <strong>Note:</strong> When adding initial stock, you must specify the batch number and shelf location for FEFO (First-Expire-First-Out) tracking. This enables automatic dispensing from the oldest available stock.
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="batch_number" class="form-label">Batch Number <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="batch_number" name="batch_number" placeholder="e.g., BATCH-2024-001" required>
+                            <small class="text-muted">Manufacturer batch identifier</small>
+                            <div class="invalid-feedback">Please provide batch number.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="shelf_location" class="form-label">Shelf Location <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="shelf_location" name="shelf_location" placeholder="e.g., Shelf A1, Cold Storage 2" required>
+                            <small class="text-muted">Physical storage location for tracking</small>
+                            <div class="invalid-feedback">Please provide shelf location.</div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="quantity" class="form-label">Quantity <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="quantity" name="quantity" min="1" value="1" required>
+                            <div class="invalid-feedback">Please provide quantity.</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="expiry_date" class="form-label">Expiry Date <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="expiry_date" name="expiry_date" required>
+                            <small class="text-muted">Used for FEFO priority</small>
+                            <div class="invalid-feedback">Please provide expiry date.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
                     <a href="{{ url_for('stock.inventory') }}" class="btn btn-secondary">Cancel</a>
-                    <button type="submit" class="btn btn-primary">Add Medicine</button>
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-plus-circle"></i> Add Medicine & Batch</button>
                 </div>
             </form>
         </div>
