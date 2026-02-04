@@ -45,7 +45,7 @@ def create_app(config_name=None):
     # Register blueprints
     register_blueprints(app)
     
-    # # Create database tables
+    # Create database tables
     # with app.app_context():
     #     # In development, drop and recreate all tables to ensure schema matches models
     #     if app.config.get('ENV') == 'development' or app.config.get('DEBUG', False):

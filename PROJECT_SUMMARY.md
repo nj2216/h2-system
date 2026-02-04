@@ -99,20 +99,27 @@ h2sqrr/
 
 ---
 
-## Database Models (12 Models)
+## Database Models (13 Models)
 
 1. **User** - System users with roles and authentication
 2. **Student** - Student profiles with emergency contacts
 3. **DoctorVisit** - Medical consultation records
-4. **Prescription** - Medicine prescriptions
-5. **Medicine** - Medicine inventory
-6. **StockMovement** - Medicine stock transactions
-7. **Asset** - Hostel assets and equipment
-8. **MaintenanceLog** - Asset maintenance history
-9. **SickLeaveRequest** - Sick leave/food workflow
-10. **MedicalEquipment** - Non-consumable equipment inventory
-11. **EquipmentIssue** - Equipment issuance and return tracking
-12. Additional supporting fields and relationships
+4. **Prescription** - Medicine prescriptions container
+   - Contains multiple medicines
+   - Overall status: PENDING, PARTIAL, DISPENSED, OUT_OF_STOCK
+   - No stock check required at creation
+5. **PrescriptionItem** - Individual medicine item in a prescription
+   - Status per medicine: PENDING, PARTIAL, DISPENSED, OUT_OF_STOCK
+   - Tracks both quantity prescribed and quantity dispensed
+   - Supports partial dispensing workflows
+6. **Medicine** - Medicine inventory
+7. **StockMovement** - Medicine stock transactions
+8. **Asset** - Hostel assets and equipment
+9. **MaintenanceLog** - Asset maintenance history
+10. **SickLeaveRequest** - Sick leave/food workflow
+11. **MedicalEquipment** - Non-consumable equipment inventory
+12. **EquipmentIssue** - Equipment issuance and return tracking
+13. Additional supporting fields and relationships
 
 ---
 
@@ -133,10 +140,16 @@ h2sqrr/
 
 ### 3. Health Management ✓
 - Doctor visit recording
-- Prescription creation
-- Medicine dispensing tracking
+- **Multiple medicines per prescription** - single prescription can contain multiple medicines
+- **Per-medicine dispensing workflow** - each medicine tracked independently
+- **Prescription creation without stock requirement** (separate from dispensing)
+- **Per-medicine status tracking**: PENDING, PARTIAL, DISPENSED, OUT_OF_STOCK
+- **Partial dispensing support** - dispense any quantity, not just full amounts
+- **Separate H2 dispensing workflow** triggered by H2 staff for each medicine
+- Individual medicine status visibility in prescription list and detail views
+- Medicine dispensing tracking with stock reduction
 - Health history viewing
-- Visit and prescription listing
+- Visit and prescription listing with status filtering
 
 ### 4. Medical Stock Management ✓
 - Medicine inventory tracking
@@ -214,9 +227,9 @@ h2sqrr/
 - `GET/POST /health/visits/create` - Create visit
 - `GET /health/visits/<id>` - View visit
 - `GET/POST /health/visits/<id>/edit` - Edit visit
-- `GET /health/prescriptions` - List prescriptions
-- `GET/POST /health/prescriptions/create` - Create prescription
-- `POST /health/prescriptions/<id>/dispense` - Dispense
+- `GET /health/prescriptions` - List prescriptions (with status filtering)
+- `GET/POST /health/prescriptions/create` - Create prescription (no stock required)
+- `POST /health/prescriptions/<id>/dispense` - Dispense prescription (separate workflow)
 
 ### Stock (8 routes)
 - `GET /stock/` - Inventory

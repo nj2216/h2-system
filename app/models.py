@@ -102,25 +102,98 @@ class DoctorVisit(db.Model):
 
 
 class Prescription(db.Model):
-    """Medicine prescription model"""
+    """Medicine prescription model - contains multiple medicines"""
     __tablename__ = 'prescriptions'
     
     id = db.Column(db.Integer, primary_key=True)
     student_id = db.Column(db.Integer, db.ForeignKey('students.id'), nullable=False)
     visit_id = db.Column(db.Integer, db.ForeignKey('doctor_visits.id'))
     created_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    medicine_name = db.Column(db.String(255), nullable=False)
+    notes = db.Column(db.Text)  # General prescription notes
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    items = db.relationship('PrescriptionItem', backref='prescription', cascade='all, delete-orphan')
+    
+    @property
+    def overall_status(self):
+        """Get overall prescription status based on items"""
+        if not self.items:
+            return 'EMPTY'
+        
+        statuses = {item.status for item in self.items}
+        
+        if statuses == {'DISPENSED'}:
+            return 'DISPENSED'
+        elif 'OUT_OF_STOCK' in statuses and len(statuses) == 1:
+            return 'OUT_OF_STOCK'
+        elif 'PENDING' in statuses:
+            return 'PENDING'
+        elif 'PARTIAL' in statuses or (statuses - {'DISPENSED'}):
+            return 'PARTIAL'
+        else:
+            return 'PENDING'
+    
+    def __repr__(self):
+        return f'<Prescription {self.id} - Student {self.student_id} ({self.overall_status})>'
+
+
+class PrescriptionItem(db.Model):
+    """Individual medicine item in a prescription"""
+    __tablename__ = 'prescription_items'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    prescription_id = db.Column(db.Integer, db.ForeignKey('prescriptions.id'), nullable=False)
+    medicine_id = db.Column(db.Integer, db.ForeignKey('medicines.id'))  # Optional - null if using dummy medicine
+    dummy_medicine_id = db.Column(db.Integer, db.ForeignKey('dummy_medicines.id'))  # For out-of-stock medicines
     dosage = db.Column(db.String(100))  # e.g., "500mg"
     frequency = db.Column(db.String(100))  # e.g., "3 times daily"
     duration_days = db.Column(db.Integer)
-    quantity_prescribed = db.Column(db.Integer, default=1)  # Number of units prescribed
+    quantity_prescribed = db.Column(db.Integer, default=1)
+    quantity_dispensed = db.Column(db.Integer, default=0)
     instructions = db.Column(db.Text)
-    is_dispensed = db.Column(db.Boolean, default=False)
+    status = db.Column(db.String(20), default='PENDING')  # PENDING, PARTIAL, DISPENSED, OUT_OF_STOCK
     dispensed_date = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    medicine = db.relationship('Medicine', backref='prescription_items')
+    dummy_medicine = db.relationship('DummyMedicine', backref='prescription_items')
+    
+    def get_medicine(self):
+        """Get either real or dummy medicine"""
+        return self.medicine if self.medicine else self.dummy_medicine
     
     def __repr__(self):
-        return f'<Prescription {self.medicine_name} - {self.student_id}>'
+        med = self.get_medicine()
+        med_name = med.name if med else "Unknown"
+        return f'<PrescriptionItem {med_name} ({self.status})>'
+
+
+class DummyMedicine(db.Model):
+    """Placeholder for medicines not in inventory (for prescribing out-of-stock medicines)"""
+    __tablename__ = 'dummy_medicines'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False, index=True)
+    generic_name = db.Column(db.String(255))
+    dosage = db.Column(db.String(100))
+    unit = db.Column(db.String(50))  # tablets, bottles, etc.
+    supplier = db.Column(db.String(255))
+    estimated_cost = db.Column(db.Float)
+    notes = db.Column(db.Text)  # Prescription notes mentioning this dummy medicine
+    replaced_by_id = db.Column(db.Integer, db.ForeignKey('medicines.id'))  # Links to real medicine after replacement
+    is_replaced = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Relationships
+    replaced_by = db.relationship('Medicine', backref='replaced_dummy_medicines')
+    
+    def __repr__(self):
+        return f'<DummyMedicine {self.name} (Replaced: {self.is_replaced})>'
 
 
 class Medicine(db.Model):

@@ -3,9 +3,21 @@
 {% block title %}Prescriptions - H2 System{% endblock %}
 
 {% block content %}
+<style>
+    .status-filter {
+        gap: 0.5rem;
+    }
+
+    .status-badge-sm {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.75rem;
+    }
+</style>
+
 <div class="row mb-4">
     <div class="col-md-8">
         <h2><i class="bi bi-prescription2"></i> Prescriptions</h2>
+        <p class="text-muted">Manage medicine prescriptions for students</p>
     </div>
     <div class="col-md-4 text-end">
         {% if current_user.role in ['H2', 'Doctor'] %}
@@ -16,46 +28,115 @@
     </div>
 </div>
 
+<!-- Status Filter -->
+<div class="d-flex status-filter mb-3 flex-wrap">
+    <a href="{{ url_for('health.prescriptions_list') }}" class="btn btn-sm btn-outline-secondary">
+        All
+    </a>
+    <a href="{{ url_for('health.prescriptions_list', status='PENDING') }}" class="btn btn-sm btn-outline-warning">
+        Pending
+    </a>
+    <a href="{{ url_for('health.prescriptions_list', status='PARTIAL') }}" class="btn btn-sm btn-outline-info">
+        Partial
+    </a>
+    <a href="{{ url_for('health.prescriptions_list', status='DISPENSED') }}" class="btn btn-sm btn-outline-success">
+        Dispensed
+    </a>
+    <a href="{{ url_for('health.prescriptions_list', status='OUT_OF_STOCK') }}" class="btn btn-sm btn-outline-danger">
+        Out of Stock
+    </a>
+</div>
+
 <div class="card shadow">
     <div class="card-body">
         <div class="table-responsive">
             <table class="table table-hover">
                 <thead class="table-dark">
                     <tr>
+                        <th>#</th>
                         <th>Student</th>
-                        <th>Medicine</th>
-                        <th>Dosage</th>
-                        <th>Frequency</th>
-                        <th>Status</th>
+                        <th>Medicines</th>
+                        <th>Item Statuses</th>
+                        <th>Overall Status</th>
+                        <th>Created</th>
                         <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for prescription in prescriptions.items %}
                     <tr>
-                        <td data-label="Student">{{ prescription.student.user.first_name }} {{ prescription.student.user.last_name }}</td>
-                        <td data-label="Medicine">{{ prescription.medicine_name }}</td>
-                        <td data-label="Dosage">{{ prescription.dosage }}</td>
-                        <td data-label="Frequency">{{ prescription.frequency }}</td>
-                        <td data-label="Status">
-                            {% if prescription.is_dispensed %}
-                                <span class="badge bg-success">Dispensed</span>
-                            {% else %}
-                                <span class="badge bg-warning">Pending</span>
+                        <td data-label="ID">#{{ prescription.id }}</td>
+                        <td data-label="Student">
+                            <strong>{{ prescription.student.user.first_name }} {{ prescription.student.user.last_name }}</strong>
+                            <br><small class="text-muted">{{ prescription.student.roll_number }}</small>
+                        </td>
+                        <td data-label="Medicines">
+                            {{ prescription.items|length }} medicine(s)
+                            {% if prescription.items|length > 0 %}
+                            <br><small class="text-muted">
+                                {% for item in prescription.items[:3] %}
+                                    {{ item.medicine.name }}{% if not loop.last %}, {% endif %}
+                                {% endfor %}
+                                {% if prescription.items|length > 3 %}<br>... and {{ prescription.items|length - 3 }} more{% endif %}
+                            </small>
                             {% endif %}
                         </td>
+                        <td data-label="Item Statuses">
+                            {% for item in prescription.items %}
+                            <span class="badge status-badge-sm bg-{{ item.status|lower }}">
+                                {{ item.status }}
+                            </span>
+                            {% endfor %}
+                        </td>
+                        <td data-label="Overall Status">
+                            <span class="badge bg-{{ prescription.overall_status|lower }}">
+                                {{ prescription.overall_status }}
+                            </span>
+                        </td>
+                        <td data-label="Created">{{ prescription.created_at.strftime('%Y-%m-%d') }}</td>
                         <td data-label="Action">
-                            <a href="{{ url_for('health.view_prescription', prescription_id=prescription.id) }}" class="btn btn-sm btn-primary"><i class="bi bi-eye"></i></a>
+                            <a href="{{ url_for('health.view_prescription', prescription_id=prescription.id) }}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-eye"></i> View
+                            </a>
                         </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="6" class="text-center text-muted">No prescriptions</td>
+                        <td colspan="7" class="text-center text-muted py-4">No prescriptions found</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
+
+        <!-- Pagination -->
+        {% if prescriptions.pages > 1 %}
+        <nav class="mt-4">
+            <ul class="pagination">
+                {% if prescriptions.has_prev %}
+                <li class="page-item"><a class="page-link" href="{{ url_for('health.prescriptions_list', page=prescriptions.prev_num, status=request.args.get('status', '')) }}">Previous</a></li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">Previous</span></li>
+                {% endif %}
+
+                {% for page_num in prescriptions.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num == prescriptions.page %}
+                        <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+                        {% else %}
+                        <li class="page-item"><a class="page-link" href="{{ url_for('health.prescriptions_list', page=page_num, status=request.args.get('status', '')) }}">{{ page_num }}</a></li>
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+
+                {% if prescriptions.has_next %}
+                <li class="page-item"><a class="page-link" href="{{ url_for('health.prescriptions_list', page=prescriptions.next_num, status=request.args.get('status', '')) }}">Next</a></li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">Next</span></li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

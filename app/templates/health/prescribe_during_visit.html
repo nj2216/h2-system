@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Create Prescription{% endblock %}
+{% block title %}Prescribe During Visit - H2 System{% endblock %}
 
 {% block content %}
 <!-- Select2 CSS -->
@@ -11,11 +11,6 @@
         border: 1px solid var(--bs-border-color);
         border-radius: 0.375rem;
         background-color: var(--bs-body-bg);
-        color: var(--bs-body-color);
-        min-height: 38px;
-    }
-
-    .select2-container--default .select2-selection--single .select2-selection__rendered {
         color: var(--bs-body-color);
     }
 
@@ -34,12 +29,6 @@
         color: white;
     }
 
-    .select2-search__field {
-        color: var(--bs-body-color);
-        background-color: var(--bs-body-bg);
-        border-color: var(--bs-border-color);
-    }
-
     .medicine-item {
         background-color: var(--light-bg);
         border: 1px solid var(--bs-border-color);
@@ -55,11 +44,6 @@
         right: 0.5rem;
     }
 
-    #medicinesList {
-        max-height: 600px;
-        overflow-y: auto;
-    }
-
     @keyframes slideIn {
         from { opacity: 0; transform: translateY(-10px); }
         to { opacity: 1; transform: translateY(0); }
@@ -73,56 +57,71 @@
     .medicine-item {
         animation: slideIn 0.3s ease-in;
     }
+
+    .stock-warning {
+        background-color: var(--bs-warning);
+        opacity: 0.8;
+        color: #000;
+        padding: 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.85rem;
+        margin-top: 0.25rem;
+    }
 </style>
 
 <div class="container mt-4">
     <div class="row">
         <div class="col-md-10 offset-md-1">
-            <h2><i class="bi bi-prescription2"></i> Create Prescription (Multiple Medicines)</h2>
-            <p class="text-muted">Create a comprehensive prescription with multiple medicines. No stock check required.</p>
-            
-            <form method="POST" class="needs-validation" novalidate id="prescriptionForm">
-                <!-- Student Selection -->
-                <div class="card mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0"><i class="bi bi-person-circle"></i> Student Information</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="student_id" class="form-label fw-600">
-                                Student <span class="text-danger">*</span>
-                            </label>
-                            <select class="form-select select2" id="student_id" name="student_id" required>
-                                <option value="">Search by Roll Number or Name...</option>
-                                {% for student in students %}
-                                <option value="{{ student.id }}">
-                                    {{ student.roll_number }} – {{ student.user.first_name }} {{ student.user.last_name }}
-                                </option>
-                                {% endfor %}
-                            </select>
-                            <div class="invalid-feedback">Please select a student.</div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="visit_id" class="form-label">Visit (Optional)</label>
-                                <select class="form-select" id="visit_id" name="visit_id">
-                                    <option value="">Not linked to a visit</option>
-                                </select>
-                            </div>
-
-                            <div class="col-md-6 mb-3">
-                                <label for="notes" class="form-label">General Notes</label>
-                                <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="e.g., Follow-up dose after 3 days"></textarea>
-                            </div>
-                        </div>
-                    </div>
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="bi bi-prescription2"></i> Prescribe During Visit</h2>
+                    <p class="text-muted">Add medicines to prescribe during this doctor visit</p>
                 </div>
+                <div>
+                    <a href="{{ url_for('health.view_visit', visit_id=visit.id) }}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Back to Visit
+                    </a>
+                </div>
+            </div>
 
+            <!-- Visit Info Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Visit Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <small class="text-muted">Student</small>
+                            <p class="mb-0"><strong>{{ visit.student.user.first_name }} {{ visit.student.user.last_name }}</strong></p>
+                        </div>
+                        <div class="col-md-4">
+                            <small class="text-muted">Roll Number</small>
+                            <p class="mb-0"><strong>{{ visit.student.roll_number }}</strong></p>
+                        </div>
+                        <div class="col-md-4">
+                            <small class="text-muted">Visit Date</small>
+                            <p class="mb-0"><strong>{{ visit.visit_date.strftime('%Y-%m-%d') }}</strong></p>
+                        </div>
+                    </div>
+                    {% if visit.diagnosis %}
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <small class="text-muted">Diagnosis</small>
+                            <p class="mb-0">{{ visit.diagnosis }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Prescription Form -->
+            <form method="POST" class="needs-validation" novalidate id="prescriptionForm">
                 <!-- Medicines Section -->
                 <div class="card mb-4">
                     <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0"><i class="bi bi-capsule"></i> Medicines</h5>
+                        <h5 class="mb-0"><i class="bi bi-capsule"></i> Medicines to Prescribe</h5>
                         <button type="button" class="btn btn-sm btn-light" onclick="addMedicineRow()">
                             <i class="bi bi-plus-circle"></i> Add Medicine
                         </button>
@@ -137,13 +136,23 @@
                     </div>
                 </div>
 
+                <!-- Notes -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-chat-left-text"></i> Prescription Notes</h5>
+                    </div>
+                    <div class="card-body">
+                        <textarea class="form-control" name="notes" rows="3" placeholder="Any additional notes for this prescription..."></textarea>
+                    </div>
+                </div>
+
                 <!-- Form Actions -->
                 <div class="d-flex gap-2 mb-4">
                     <button type="submit" class="btn btn-primary btn-lg flex-grow-1">
                         <i class="bi bi-check-circle"></i> Create Prescription
                     </button>
-                    <a href="{{ url_for('health.prescriptions_list') }}" class="btn btn-secondary btn-lg">
-                        <i class="bi bi-arrow-left"></i> Cancel
+                    <a href="{{ url_for('health.view_visit', visit_id=visit.id) }}" class="btn btn-secondary btn-lg">
+                        <i class="bi bi-x-circle"></i> Cancel
                     </a>
                 </div>
             </form>
@@ -164,7 +173,7 @@
                 <select class="form-select select2-med" name="medicine_id" required onchange="updateMedicineDetails(this)">
                     <option value="">Select a medicine...</option>
                     {% for medicine in medicines %}
-                    <option value="{{ medicine.id }}" data-stock="{{ medicine.quantity }}" data-dosage="{{ medicine.dosage }}" data-unit="{{ medicine.unit }}">
+                    <option value="{{ medicine.id }}" data-stock="{{ medicine.quantity }}" data-dosage="{{ medicine.dosage }}" data-unit="{{ medicine.unit }}" data-generic="{{ medicine.generic_name or '' }}">
                         {{ medicine.name }} ({{ medicine.dosage }}) – Stock: {{ medicine.quantity }} {{ medicine.unit }}
                     </option>
                     {% endfor %}
@@ -178,7 +187,10 @@
 
             <div class="col-md-3 mb-3">
                 <label class="form-label">Stock Available</label>
-                <input type="text" class="form-control stock-field" readonly placeholder="0">
+                <div class="input-group">
+                    <input type="text" class="form-control stock-field" readonly placeholder="0">
+                    <span class="input-group-text unit-field">units</span>
+                </div>
             </div>
         </div>
 
@@ -211,7 +223,14 @@
 
             <div class="col-md-3 mb-3">
                 <label class="form-label">Status</label>
-                <input type="text" class="form-control" value="PENDING" readonly style="background-color: var(--bs-warning); opacity: 0.7;">
+                <input type="text" class="form-control status-field" value="PENDING" readonly style="background-color: var(--bs-warning); opacity: 0.7;">
+            </div>
+        </div>
+
+        <div class="stock-status-warning" style="display: none;">
+            <div class="stock-warning">
+                <i class="bi bi-exclamation-triangle"></i> 
+                <strong>Out of Stock:</strong> This medicine will be marked for purchasing. A placeholder will be created.
             </div>
         </div>
 
@@ -237,7 +256,6 @@
         medicinesList.appendChild(clone);
         medicineRowCount++;
         
-        // Initialize Select2 for the new row
         initializeSelect2();
     }
 
@@ -258,13 +276,29 @@
         if (option.value) {
             const dosage = option.getAttribute('data-dosage') || '';
             const stock = option.getAttribute('data-stock') || '0';
-            const unit = option.getAttribute('data-unit') || '';
+            const unit = option.getAttribute('data-unit') || 'units';
             
             row.querySelector('.dosage-field').value = dosage;
-            row.querySelector('.stock-field').value = stock + ' ' + unit;
+            row.querySelector('.stock-field').value = stock;
+            row.querySelector('.unit-field').textContent = unit;
+            
+            // Show warning if out of stock
+            const quantityField = row.querySelector('.quantity-field');
+            const warningDiv = row.querySelector('.stock-status-warning');
+            
+            if (parseInt(stock) === 0) {
+                row.querySelector('.status-field').value = 'OUT_OF_STOCK';
+                warningDiv.style.display = 'block';
+            } else {
+                row.querySelector('.status-field').value = 'PENDING';
+                warningDiv.style.display = 'none';
+            }
         } else {
             row.querySelector('.dosage-field').value = '';
             row.querySelector('.stock-field').value = '';
+            row.querySelector('.unit-field').textContent = 'units';
+            row.querySelector('.status-field').value = 'PENDING';
+            row.querySelector('.stock-status-warning').style.display = 'none';
         }
     }
 
@@ -296,12 +330,6 @@
     }
 
     function initializeSelect2() {
-        $('#student_id').select2({
-            placeholder: 'Search by roll number or name...',
-            allowClear: true,
-            width: '100%'
-        });
-
         $('.select2-med').select2({
             placeholder: 'Select a medicine...',
             allowClear: true,
@@ -316,13 +344,6 @@
         if (medicines.length === 0) {
             e.preventDefault();
             alert('Please add at least one medicine.');
-            return false;
-        }
-
-        const studentId = document.getElementById('student_id').value;
-        if (!studentId) {
-            e.preventDefault();
-            alert('Please select a student.');
             return false;
         }
 

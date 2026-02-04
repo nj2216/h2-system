@@ -53,35 +53,38 @@
                 </div>
             </div>
             
+            <!-- Prescriptions Section -->
             {% if prescriptions %}
-            <div class="card">
-                <div class="card-header">
-                    <h5>Prescriptions</h5>
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-prescription2"></i> Prescriptions ({{ prescriptions|length }})</h5>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th>Medicine</th>
-                                <th>Dosage</th>
-                                <th>Frequency</th>
-                                <th>Duration</th>
+                                <th>Prescription ID</th>
+                                <th>Medicines</th>
                                 <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for prescription in prescriptions %}
                             <tr>
-                                <td>{{ prescription.medicine.name }}</td>
-                                <td>{{ prescription.dosage }}</td>
-                                <td>{{ prescription.frequency }}</td>
-                                <td>{{ prescription.duration }}</td>
+                                <td><strong>#{{ prescription.id }}</strong></td>
+                                <td>{{ prescription.items|length }} medicine(s)</td>
                                 <td>
-                                    {% if prescription.is_dispensed %}
-                                    <span class="badge bg-success">Dispensed</span>
-                                    {% else %}
-                                    <span class="badge bg-warning">Pending</span>
-                                    {% endif %}
+                                    <span class="badge bg-{% if prescription.overall_status == 'DISPENSED' %}success{% elif prescription.overall_status == 'PENDING' %}warning{% elif prescription.overall_status == 'PARTIAL' %}info{% else %}danger{% endif %}">
+                                        {{ prescription.overall_status }}
+                                    </span>
+                                </td>
+                                <td>{{ prescription.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    <a href="{{ url_for('health.view_prescription', prescription_id=prescription.id) }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-eye"></i> View
+                                    </a>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -92,10 +95,15 @@
             {% endif %}
             
             <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                {% if current_user.role == 'Doctor' %}
-                <a href="{{ url_for('health.edit_visit', visit_id=visit.id) }}" class="btn btn-primary">Edit</a>
-                {% endif %}
-                <a href="{{ url_for('health.visits_list') }}" class="btn btn-secondary">Back</a>
+                <a href="{{ url_for('health.prescribe_during_visit', visit_id=visit.id) }}" class="btn btn-success">
+                    <i class="bi bi-prescription2"></i> Create Prescription
+                </a>
+                <a href="{{ url_for('health.edit_visit', visit_id=visit.id) }}" class="btn btn-primary">
+                    <i class="bi bi-pencil"></i> Edit Visit
+                </a>
+                <a href="{{ url_for('health.visits_list') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back
+                </a>
             </div>
         </div>
     </div>

@@ -3,79 +3,236 @@
 {% block title %}Prescription Details{% endblock %}
 
 {% block content %}
+<style>
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-weight: 600;
+    }
+
+    .item-card {
+        border-left: 4px solid var(--bs-info);
+        margin-bottom: 1rem;
+    }
+
+    .item-card.pending {
+        border-left-color: var(--bs-warning);
+    }
+
+    .item-card.partial {
+        border-left-color: var(--bs-info);
+    }
+
+    .item-card.dispensed {
+        border-left-color: var(--bs-success);
+    }
+
+    .item-card.out-of-stock {
+        border-left-color: var(--bs-danger);
+    }
+
+    .dispense-form {
+        background-color: var(--light-bg);
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-top: 1rem;
+    }
+</style>
+
 <div class="container mt-4">
     <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <h2>Prescription Details</h2>
-            
-            <div class="card">
-                <div class="card-header">
-                    <h5>Prescription Information</h5>
+        <div class="col-md-10 offset-md-1">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="bi bi-prescription2"></i> Prescription #{{ prescription.id }}</h2>
+                <span class="status-badge bg-{{ prescription.overall_status|lower }}">
+                    {{ prescription.overall_status }}
+                </span>
+            </div>
+
+            <!-- Student Info Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-person-circle"></i> Student Information</h5>
                 </div>
                 <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <strong>Student:</strong> {{ prescription.student.user.username }} ({{ prescription.student.roll_number }})
-                        </div>
-                        <div class="col-md-6">
-                            <strong>Status:</strong> 
-                            {% if prescription.is_dispensed %}
-                            <span class="badge bg-success">Dispensed</span>
-                            {% else %}
-                            <span class="badge bg-warning">Pending</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <strong>Medicine:</strong> {{ prescription.medicine_name }}
-                        </div>
-                        <div class="col-md-6">
-                            <strong>Dosage:</strong> {{ prescription.dosage }}
-                        </div>
-                    </div>
-                    
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <strong>Frequency:</strong> {{ prescription.frequency }}
-                        </div>
-                        <div class="col-md-6">
-                            <strong>Duration:</strong> {{ prescription.duration }}
-                        </div>
-                    </div>
-                    
-                    {% if prescription.instructions %}
-                    <div class="mb-3">
-                        <strong>Instructions:</strong>
-                        <p>{{ prescription.instructions }}</p>
-                    </div>
-                    {% endif %}
-                    
                     <div class="row">
                         <div class="col-md-6">
-                            <strong>Created:</strong> {{ prescription.created_at.strftime('%Y-%m-%d %H:%M') }}
+                            <strong>Name:</strong> {{ prescription.student.user.first_name }} {{ prescription.student.user.last_name }}
                         </div>
                         <div class="col-md-6">
-                            <strong>Doctor:</strong> {{ prescription.doctor.user.username if prescription.doctor else 'N/A' }}
+                            <strong>Roll Number:</strong> {{ prescription.student.roll_number }}
+                        </div>
+                    </div>
+                    {% if prescription.visit_id %}
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            <strong>Visit ID:</strong> <a href="{{ url_for('health.view_visit', visit_id=prescription.visit_id) }}">#{{ prescription.visit_id }}</a>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Created By:</strong> {{ prescription.created_by.username if prescription.created_by else 'N/A' }}
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% if prescription.notes %}
+                    <div class="row mt-2">
+                        <div class="col-12">
+                            <strong>General Notes:</strong>
+                            <p class="mb-0">{{ prescription.notes }}</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Medicines Section -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-capsule"></i> Prescribed Medicines ({{ prescription.items|length }})</h5>
+                </div>
+                <div class="card-body">
+                    {% if prescription.items|length > 0 %}
+                        {% for item in prescription.items %}
+                        <div class="card item-card {{ item.status|lower }}">
+                            <div class="card-header d-flex justify-content-between align-items-center" style="background-color: transparent; border-bottom: 1px solid var(--bs-border-color);">
+                                <div>
+                                    <h6 class="mb-1">{{ item.get_medicine().name }}</h6>
+                                    <small class="text-muted">Generic: {{ item.get_medicine().generic_name or '-' }} | Dosage: {{ item.dosage or '-' }} | Frequency: {{ item.frequency or '-' }}</small>
+                                </div>
+                                <div>
+                                    <span class="badge bg-{{ item.status|lower }}">
+                                        {{ item.status }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-3">
+                                        <small class="text-muted">Duration</small>
+                                        <p class="mb-0"><strong>{{ item.duration_days }} days</strong></p>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small class="text-muted">Prescribed Quantity</small>
+                                        <p class="mb-0"><strong>{{ item.quantity_prescribed }} {{ item.get_medicine().unit }}</strong></p>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small class="text-muted">Dispensed Quantity</small>
+                                        <p class="mb-0"><strong>{{ item.quantity_dispensed }} {{ item.get_medicine().unit }}</strong></p>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <small class="text-muted">Remaining</small>
+                                        <p class="mb-0"><strong>{{ item.quantity_prescribed - item.quantity_dispensed }} {{ item.get_medicine().unit }}</strong></p>
+                                    </div>
+                                </div>
+
+                                <!-- Dummy Medicine Info -->
+                                {% if item.dummy_medicine %}
+                                <div class="alert alert-warning mb-3">
+                                    <strong><i class="bi bi-exclamation-triangle"></i> Out of Stock Placeholder:</strong>
+                                    <p class="mb-2">This medicine was not in stock when prescribed. A placeholder was created.</p>
+                                    {% if item.dummy_medicine.supplier %}
+                                    <small><strong>Supplier:</strong> {{ item.dummy_medicine.supplier }}</small><br>
+                                    {% endif %}
+                                    {% if item.dummy_medicine.estimated_cost %}
+                                    <small><strong>Estimated Cost:</strong> ₹{{ item.dummy_medicine.estimated_cost }}</small><br>
+                                    {% endif %}
+                                    {% if item.dummy_medicine.notes %}
+                                    <small><strong>Notes:</strong> {{ item.dummy_medicine.notes }}</small>
+                                    {% endif %}
+                                    {% if current_user.role == 'H2' and item.status != 'DISPENSED' %}
+                                    <div class="mt-2">
+                                        <a href="{{ url_for('health.replace_dummy_medicine', item_id=item.id) }}" class="btn btn-sm btn-warning">
+                                            <i class="bi bi-arrow-left-right"></i> Replace with Real Medicine
+                                        </a>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
+
+                                {% if item.instructions %}
+                                <div class="alert alert-info mb-0">
+                                    <small><strong>Instructions:</strong> {{ item.instructions }}</small>
+                                </div>
+                                {% endif %}
+
+                                <!-- Dispense Form for H2 -->
+                                {% if current_user.role == 'H2' and item.status != 'DISPENSED' %}
+                                <form method="POST" action="{{ url_for('health.dispense_prescription', prescription_id=prescription.id) }}" class="dispense-form">
+                                    <input type="hidden" name="item_id" value="{{ item.id }}">
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6 mb-2">
+                                            <label class="form-label"><small>Quantity to Dispense</small></label>
+                                            <input type="number" class="form-control form-control-sm" name="quantity_to_dispense" 
+                                                   min="1" max="{{ item.quantity_prescribed - item.quantity_dispensed }}"
+                                                   value="{{ item.quantity_prescribed - item.quantity_dispensed }}" required>
+                                            <small class="text-muted">Max: {{ item.quantity_prescribed - item.quantity_dispensed }}</small>
+                                        </div>
+                                        <div class="col-md-6 d-flex align-items-end mb-2">
+                                            <button type="submit" class="btn btn-sm btn-success w-100">
+                                                <i class="bi bi-check-circle"></i> Dispense
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="alert alert-warning">
+                        No medicines added to this prescription.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Timeline/History -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Timeline</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">Created</small>
+                            <p class="mb-2"><strong>{{ prescription.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</strong></p>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">Last Updated</small>
+                            <p class="mb-2"><strong>{{ prescription.updated_at.strftime('%Y-%m-%d %H:%M:%S') }}</strong></p>
                         </div>
                     </div>
                 </div>
             </div>
-            
-            {% if not prescription.is_dispensed and current_user.role == 'H2' %}
-            <form method="POST" action="{{ url_for('health.dispense_prescription', prescription_id=prescription.id) }}" class="mt-4">
-                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                    <a href="{{ url_for('health.prescriptions_list') }}" class="btn btn-secondary">Back</a>
-                    <button type="submit" class="btn btn-success">Mark as Dispensed</button>
+
+            <!-- Actions -->
+            <div class="d-flex gap-2 mb-4 flex-wrap">
+                <a href="{{ url_for('health.prescriptions_list') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Prescriptions
+                </a>
+                {% if current_user.role in ['H2', 'Director', 'Doctor'] %}
+                <div class="btn-group" role="group">
+                    <a href="{{ url_for('health.print_prescription', prescription_id=prescription.id, include_dummy_details='true') }}" class="btn btn-outline-primary" title="Print with supplier details">
+                        <i class="bi bi-printer"></i> Print (Full)
+                    </a>
+                    <a href="{{ url_for('health.print_prescription', prescription_id=prescription.id, include_dummy_details='false') }}" class="btn btn-outline-info" title="Print without supplier details">
+                        <i class="bi bi-file-earmark"></i> Print (Patient Copy)
+                    </a>
                 </div>
-            </form>
-            {% else %}
-            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                <a href="{{ url_for('health.prescriptions_list') }}" class="btn btn-secondary">Back</a>
+                {% endif %}
             </div>
-            {% endif %}
         </div>
     </div>
 </div>
+
+<script>
+    // Auto-focus quantity field on page load
+    document.querySelectorAll('input[name="quantity_to_dispense"]').forEach(input => {
+        input.addEventListener('focus', function() {
+            this.select();
+        });
+    });
+</script>
 {% endblock %}

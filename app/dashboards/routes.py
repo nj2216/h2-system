@@ -41,11 +41,9 @@ def student_dashboard():
     # Get student's recent doctor visits
     recent_visits = student.doctor_visits[-5:] if student.doctor_visits else []
     
-    # Get student's pending prescriptions
-    pending_prescriptions = Prescription.query.filter_by(
-        student_id=student.id, 
-        is_dispensed=False
-    ).all()
+    # Get student's pending/partial prescriptions (not fully dispensed)
+    all_prescriptions = Prescription.query.filter_by(student_id=student.id).all()
+    pending_prescriptions = [p for p in all_prescriptions if p.overall_status != 'DISPENSED']
     
     # Get student's sick leave requests
     sick_requests = student.sickleave_requests[-3:] if student.sickleave_requests else []
@@ -79,8 +77,9 @@ def h2_dashboard():
     # Recent doctor visits
     recent_visits = DoctorVisit.query.order_by(DoctorVisit.visit_date.desc()).limit(10).all()
     
-    # Undispensed prescriptions
-    undispensed = Prescription.query.filter_by(is_dispensed=False).count()
+    # Undispensed prescriptions (not all items dispensed)
+    all_prescriptions = Prescription.query.all()
+    undispensed = sum(1 for p in all_prescriptions if p.overall_status != 'DISPENSED')
     
     stats = {
         'total_students': total_students,
@@ -210,10 +209,8 @@ def doctor_dashboard():
     my_prescriptions = Prescription.query.filter_by(created_by_id=current_user.id).count()
     
     # Undispensed prescriptions created by this doctor
-    undispensed = Prescription.query.filter(
-        Prescription.created_by_id == current_user.id,
-        Prescription.is_dispensed == False
-    ).count()
+    doctor_prescriptions = Prescription.query.filter_by(created_by_id=current_user.id).all()
+    undispensed = sum(1 for p in doctor_prescriptions if p.overall_status != 'DISPENSED')
     
     # Recent visits by this doctor
     recent_visits = DoctorVisit.query.filter_by(
