@@ -3,21 +3,33 @@
 {% block title %}Students List - H2 System{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-md-8">
-        <h2><i class="bi bi-people"></i> Students</h2>
-    </div>
-    <div class="col-md-4">
-        {% if current_user.role in ['H2', 'Director'] %}
-        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-            <a href="{{ url_for('students.register_student') }}" class="btn btn-primary btn-sm">
-                <i class="bi bi-person-plus"></i> Register
-            </a>
-            <a href="{{ url_for('students.bulk_upload_students') }}" class="btn btn-info btn-sm">
-                <i class="bi bi-cloud-upload"></i> Upload
-            </a>
+<style>
+    .students-list-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+    }
+</style>
+
+<div class="students-list-header">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="bi bi-people"></i> Students</h2>
         </div>
-        {% endif %}
+        <div class="col-md-4">
+            {% if current_user.role in ['H2', 'Director'] %}
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <a href="{{ url_for('students.register_student') }}" class="btn btn-light btn-sm me-2">
+                    <i class="bi bi-person-plus"></i> Register
+                </a>
+                <a href="{{ url_for('students.bulk_upload_students') }}" class="btn bg-primary text-white btn-sm me-2">
+                    <i class="bi bi-cloud-upload"></i> Upload
+                </a>
+            </div>
+            {% endif %}
+        </div>
     </div>
 </div>
 

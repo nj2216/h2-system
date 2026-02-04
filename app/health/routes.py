@@ -211,6 +211,9 @@ def prescribe_during_visit(visit_id):
         return redirect(url_for('health.view_visit', visit_id=visit_id))
     
     medicines = Medicine.query.all()
+    # Add total_batch_quantity to each medicine for accurate stock display (non-expired batches only)
+    for medicine in medicines:
+        medicine.display_quantity = medicine.total_batch_quantity
     return render_template('health/prescribe_during_visit.html', visit=visit, medicines=medicines)
 
 
@@ -228,7 +231,7 @@ def prescriptions_list():
         query = query.filter_by(student_id=student_id)
     
     if status:
-        query = query.filter_by(status=status)
+        query = query.filter_by(overall_status=status)
     
     prescriptions = query.order_by(Prescription.created_at.desc()).paginate(page=page, per_page=20)
     
@@ -240,6 +243,8 @@ def prescriptions_list():
 def create_prescription():
     """Create a new prescription with multiple medicines"""
     if request.method == 'POST':
+        import json
+        
         student_id = request.form.get('student_id', type=int)
         visit_id = request.form.get('visit_id', type=int)
         notes = request.form.get('notes', '').strip()
@@ -248,6 +253,7 @@ def create_prescription():
         
         # Get medicine IDs and quantities from form
         medicine_ids = request.form.getlist('medicine_id')
+        is_new_medicine_list = request.form.getlist('is_new_medicine[]')
         
         if not medicine_ids or len(medicine_ids) == 0:
             flash('Please add at least one medicine to the prescription.', 'danger')
@@ -277,10 +283,76 @@ def create_prescription():
         
         # Add prescription items
         item_count = 0
+        out_of_stock_items = []  # Track which items will use dummy medicines
+        new_medicines_created = []  # Track newly created medicines
+        
         for idx, medicine_id in enumerate(medicine_ids):
             if not medicine_id:
                 continue
             
+            # Handle new medicine creation
+            if medicine_id == 'NEW':
+                try:
+                    # Get the JSON data from the hidden field
+                    medicine_json = is_new_medicine_list[idx] if idx < len(is_new_medicine_list) else '{}'
+                    
+                    # Skip empty values
+                    if not medicine_json or medicine_json == '{}':
+                        flash('Please fill in all medicine details.', 'warning')
+                        continue
+                    
+                    medicine_data = json.loads(medicine_json)
+                    
+                    # Validate required fields
+                    if not medicine_data.get('name'):
+                        flash('Medicine name is required.', 'warning')
+                        continue
+                    
+                    # Create new dummy medicine
+                    dummy_medicine = DummyMedicine(
+                        name=medicine_data.get('name'),
+                        generic_name=medicine_data.get('generic_name'),
+                        dosage=medicine_data.get('dosage'),
+                        unit=medicine_data.get('unit')
+                    )
+                    db.session.add(dummy_medicine)
+                    db.session.flush()
+                    
+                    dosage = request.form.getlist('dosage[]')[idx] if idx < len(request.form.getlist('dosage[]')) else medicine_data.get('dosage', '')
+                    frequency = request.form.getlist('frequency[]')[idx] if idx < len(request.form.getlist('frequency[]')) else ''
+                    duration_days = request.form.getlist('duration_days[]')[idx] if idx < len(request.form.getlist('duration_days[]')) else '0'
+                    quantity = request.form.getlist('quantity_prescribed[]')[idx] if idx < len(request.form.getlist('quantity_prescribed[]')) else '1'
+                    instructions = request.form.getlist('instructions[]')[idx] if idx < len(request.form.getlist('instructions[]')) else ''
+                    
+                    try:
+                        duration_days = int(duration_days) if duration_days else 0
+                        quantity = int(quantity) if quantity else 1
+                    except ValueError:
+                        flash(f'Invalid values for {medicine_data.get("name")}', 'warning')
+                        continue
+                    
+                    frequency_text = frequency_map.get(frequency, frequency)
+                    
+                    # Create prescription item linked to dummy medicine
+                    item = PrescriptionItem(
+                        prescription_id=prescription.id,
+                        dummy_medicine_id=dummy_medicine.id,
+                        dosage=dosage.strip() or None,
+                        frequency=frequency_text.strip() or None,
+                        duration_days=duration_days,
+                        quantity_prescribed=quantity,
+                        instructions=instructions.strip() or None,
+                        status='OUT_OF_STOCK'  # New medicines are marked as out of stock
+                    )
+                    db.session.add(item)
+                    item_count += 1
+                    new_medicines_created.append(f'{medicine_data.get("name")} ({medicine_data.get("dosage", "")})')
+                    continue
+                except (json.JSONDecodeError, KeyError, ValueError) as e:
+                    flash(f'Error creating new medicine: {str(e)}', 'warning')
+                    continue
+            
+            # Handle existing medicines
             medicine = Medicine.query.get(medicine_id)
             if not medicine:
                 continue
@@ -299,6 +371,10 @@ def create_prescription():
                 continue
             
             frequency_text = frequency_map.get(frequency, frequency)
+            
+            # Check stock availability
+            if medicine.total_batch_quantity < quantity:
+                out_of_stock_items.append(f'{medicine.name} (need: {quantity}, available: {medicine.total_batch_quantity})')
             
             item = PrescriptionItem(
                 prescription_id=prescription.id,
@@ -320,10 +396,24 @@ def create_prescription():
         
         db.session.commit()
         flash(f'Prescription created with {item_count} medicine(s). Ready for dispensing.', 'success')
+        
+        # Warn about new medicines created
+        if new_medicines_created:
+            success_msg = 'New medicines added to prescription: ' + '; '.join(new_medicines_created) + '. These can be replaced with real medicines once stock arrives.'
+            flash(success_msg, 'info')
+        
+        # Warn about out-of-stock items that may use dummy medicines
+        if out_of_stock_items:
+            warning_msg = 'The following medicines are out of stock and may need to be created as dummy medicines: ' + '; '.join(out_of_stock_items)
+            flash(warning_msg, 'warning')
+        
         return redirect(url_for('health.view_prescription', prescription_id=prescription.id))
     
     students = Student.query.all()
     medicines = Medicine.query.all()  # Show all medicines
+    # Add total_batch_quantity to each medicine for accurate stock display (non-expired batches only)
+    for medicine in medicines:
+        medicine.display_quantity = medicine.total_batch_quantity
     
     return render_template('health/create_prescription.html', students=students, medicines=medicines)
 
@@ -518,9 +608,12 @@ def replace_dummy_medicine(item_id):
         real_medicine_id = request.form.get('medicine_id', type=int)
         real_medicine = Medicine.query.get_or_404(real_medicine_id)
         
+        # Get dummy BEFORE clearing the relationship
+        dummy = item.dummy_medicine
+        
         # Verify new medicine has sufficient stock
-        if real_medicine.quantity < item.quantity_prescribed:
-            flash(f'Insufficient stock for {real_medicine.name}. Required: {item.quantity_prescribed}, Available: {real_medicine.quantity}', 'danger')
+        if real_medicine.total_batch_quantity < item.quantity_prescribed:
+            flash(f'Insufficient stock for {real_medicine.name}. Required: {item.quantity_prescribed}, Available: {real_medicine.total_batch_quantity}', 'danger')
             return redirect(url_for('health.replace_dummy_medicine', item_id=item_id))
         
         # Update prescription item
@@ -529,7 +622,6 @@ def replace_dummy_medicine(item_id):
         item.status = 'PENDING'  # Reset to PENDING
         
         # Mark dummy as replaced
-        dummy = item.dummy_medicine
         dummy.is_replaced = True
         dummy.replaced_by_id = real_medicine_id
         
@@ -540,7 +632,9 @@ def replace_dummy_medicine(item_id):
     
     # Get available real medicines that could replace this dummy
     dummy = item.dummy_medicine
-    similar_medicines = Medicine.query.filter(Medicine.quantity > 0).all()
+    all_medicines = Medicine.query.all()
+    # Filter only medicines with non-expired batch stock available
+    similar_medicines = [m for m in all_medicines if m.total_batch_quantity > 0]
     
     return render_template('health/replace_dummy_medicine.html', item=item, dummy=dummy, medicines=similar_medicines)
 

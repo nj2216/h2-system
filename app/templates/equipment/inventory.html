@@ -5,31 +5,44 @@
 {% block content %}
 <style>
     .btn-group .btn { flex: 1; }
+    
+    .equipments-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+    }
 </style>
-<div class="container mt-4">
+
+<div class="equipments-header">
     <div class="row mb-4">
         <div class="col-md-8">
             <h2><i class="bi bi-capsule"></i> Medical Equipment Inventory</h2>
         </div>
-        <div class="col-md-4 text-end d-flex gap-2 justify-content-end flex-wrap">
-            {% if current_user.role in ['H2', 'Office', 'Warden'] %}
-            <a href="{{ url_for('equipment.issue_list') }}" class="btn btn-info">
-                <i class="bi bi-list-check"></i> <span class="d-none d-sm-inline">View Issues</span>
-            </a>
-            {% endif %}
-            {% if current_user.role in ['H2', 'Doctor'] %}
-            <a href="{{ url_for('equipment.issue_equipment') }}" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> Issue Equipment
-            </a>
-            {% endif %}
-            {% if current_user.role == 'H2' %}
-            <a href="{{ url_for('equipment.manage_equipment') }}" class="btn btn-secondary">
-                <i class="bi bi-gear"></i> Manage
-            </a>
-            {% endif %}
+        <div class="col-md-4">
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                {% if current_user.role in ['H2', 'Office', 'Warden'] %}
+                <a href="{{ url_for('equipment.issue_list') }}" class="btn btn-light btn-sm me-2">
+                    <i class="bi bi-list-check"></i> <span class="d-none d-sm-inline">View Issues</span>
+                </a>
+                {% endif %}
+                {% if current_user.role in ['H2', 'Doctor'] %}
+                <a href="{{ url_for('equipment.issue_equipment') }}" class="btn btn-light bg-secondary text-white btn-sm me-2">
+                    <i class="bi bi-plus-circle"></i> Issue Equipment
+                </a>
+                {% endif %}
+                {% if current_user.role == 'H2' %}
+                <a href="{{ url_for('equipment.manage_equipment') }}" class="btn btn-light bg-primary text-white btn-sm me-2">
+                    <i class="bi bi-gear"></i> Manage
+                </a>
+                {% endif %}
+            </div>
         </div>
     </div>
+</div>
 
+<div class="container mt-4">
     <!-- Search -->
     <form method="GET" class="mb-4">
         <div class="input-group">

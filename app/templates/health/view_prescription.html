@@ -117,7 +117,7 @@
                             <strong>Visit ID:</strong> <a href="{{ url_for('health.view_visit', visit_id=prescription.visit_id) }}">#{{ prescription.visit_id }}</a>
                         </div>
                         <div class="col-md-6">
-                            <strong>Created By:</strong> {{ prescription.created_by.username if prescription.created_by else 'N/A' }}
+                            <strong>Created By:</strong> {{ prescription.created_by_id if prescription.created_by_id else 'N/A' }}
                         </div>
                     </div>
                     {% endif %}
@@ -147,7 +147,8 @@
                                     <small class="text-muted">Generic: {{ item.get_medicine().generic_name or '-' }} | Dosage: {{ item.dosage or '-' }} | Frequency: {{ item.frequency or '-' }}</small>
                                 </div>
                                 <div>
-                                    <span class="badge bg-{{ item.status|lower }}">
+                                    {% set item_color = 'warning' if item.status == 'PENDING' else 'info' if item.status == 'PARTIAL' else 'success' if item.status == 'DISPENSED' else 'danger' if item.status == 'OUT_OF_STOCK' else 'secondary' %}
+                                    <span class="badge bg-{{ item_color }}">
                                         {{ item.status }}
                                     </span>
                                 </div>

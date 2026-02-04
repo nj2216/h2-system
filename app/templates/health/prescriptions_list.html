@@ -12,19 +12,29 @@
         font-size: 0.75rem;
         padding: 0.25rem 0.75rem;
     }
+
+    .prescription-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+    }
 </style>
 
-<div class="row mb-4">
-    <div class="col-md-8">
-        <h2><i class="bi bi-prescription2"></i> Prescriptions</h2>
-        <p class="text-muted">Manage medicine prescriptions for students</p>
-    </div>
-    <div class="col-md-4 text-end">
-        {% if current_user.role in ['H2', 'Doctor'] %}
-        <a href="{{ url_for('health.create_prescription') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Create Prescription
-        </a>
-        {% endif %}
+<div class="prescription-header">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="bi bi-prescription2"></i> Prescriptions</h2>
+            <p class="text">Manage medicine prescriptions for students</p>
+        </div>
+        <div class="col-md-4 text-end">
+            {% if current_user.role in ['H2', 'Doctor'] %}
+            <a href="{{ url_for('health.create_prescription') }}" class="btn btn-light btn-sm me-2">
+                <i class="bi bi-plus-circle"></i> Create Prescription
+            </a>
+            {% endif %}
+        </div>
     </div>
 </div>
 
@@ -75,7 +85,12 @@
                             {% if prescription.items|length > 0 %}
                             <br><small class="text-muted">
                                 {% for item in prescription.items[:3] %}
-                                    {{ item.medicine.name }}{% if not loop.last %}, {% endif %}
+                                    {% if item.dummy_medicine_id %}
+                                    <i class="bi bi-exclamation-triangle text-warning"></i> {{ item.dummy_medicine.name }}
+                                    {% else %}
+                                    {{ item.medicine.name }}
+                                    {% endif %}
+                                    {% if not loop.last %}, {% endif %}
                                 {% endfor %}
                                 {% if prescription.items|length > 3 %}<br>... and {{ prescription.items|length - 3 }} more{% endif %}
                             </small>
@@ -83,13 +98,15 @@
                         </td>
                         <td data-label="Item Statuses">
                             {% for item in prescription.items %}
-                            <span class="badge status-badge-sm bg-{{ item.status|lower }}">
+                            {% set item_color = 'warning' if item.status == 'PENDING' else 'info' if item.status == 'PARTIAL' else 'success' if item.status == 'DISPENSED' else 'danger' if item.status == 'OUT_OF_STOCK' else 'secondary' %}
+                            <span class="badge status-badge-sm bg-{{ item_color }}">
                                 {{ item.status }}
                             </span>
                             {% endfor %}
                         </td>
                         <td data-label="Overall Status">
-                            <span class="badge bg-{{ prescription.overall_status|lower }}">
+                            {% set status_color = 'warning' if prescription.overall_status == 'PENDING' else 'success' if prescription.overall_status == 'DISPENSED' else 'danger' if prescription.overall_status == 'OUT_OF_STOCK' else 'info' if prescription.overall_status == 'PARTIAL' else 'secondary' %}
+                            <span class="badge bg-{{ status_color }}">
                                 {{ prescription.overall_status }}
                             </span>
                         </td>

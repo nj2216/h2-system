@@ -52,7 +52,7 @@
         font-weight: 600;
         margin-bottom: 1rem;
         display: flex;
-        align-items-center;
+        align-items: center;
         gap: 0.5rem;
     }
 
@@ -155,7 +155,7 @@
         color: #000;
         margin-bottom: 0.5rem;
         display: flex;
-        align-items-center;
+        align-items: center;
         gap: 0.5rem;
     }
 
@@ -300,13 +300,13 @@
 
                     <label class="form-label fw-600 mb-3">Available Medicines in Stock <span class="text-danger">*</span></label>
 
-                    {% if available_medicines %}
+                    {% if medicines %}
                         <div class="mb-3">
                             <select class="form-select select2-med" name="medicine_id" required onchange="updateMedicineInfo(this)">
                                 <option value="">Select a medicine...</option>
-                                {% for medicine in available_medicines %}
-                                <option value="{{ medicine.id }}" data-dosage="{{ medicine.dosage }}" data-unit="{{ medicine.unit }}" data-stock="{{ medicine.quantity }}">
-                                    {{ medicine.name }} ({{ medicine.dosage }}) – Available: {{ medicine.quantity }} {{ medicine.unit }}
+                                {% for medicine in medicines %}
+                                <option value="{{ medicine.id }}" data-dosage="{{ medicine.dosage }}" data-unit="{{ medicine.unit }}" data-stock="{{ medicine.total_batch_quantity }}">
+                                    {{ medicine.name }} ({{ medicine.dosage }}) – Available: {{ medicine.total_batch_quantity }} {{ medicine.unit }}
                                 </option>
                                 {% endfor %}
                             </select>
@@ -340,7 +340,7 @@
 
                 <!-- Action Buttons -->
                 <div class="action-buttons">
-                    {% if available_medicines %}
+                    {% if medicines %}
                     <button type="submit" class="btn btn-success btn-lg-custom flex-grow-1" id="replaceBtn" disabled>
                         <i class="bi bi-arrow-right-circle"></i> Replace Medicine
                     </button>
@@ -380,10 +380,16 @@
             document.getElementById('selectedStock').textContent = stock + ' ' + unit;
 
             infoDiv.style.display = 'block';
-            replaceBtn.disabled = false;
+            // Only set disabled if button exists
+            if (replaceBtn) {
+                replaceBtn.disabled = false;
+            }
         } else {
             infoDiv.style.display = 'none';
-            replaceBtn.disabled = true;
+            // Only set disabled if button exists
+            if (replaceBtn) {
+                replaceBtn.disabled = true;
+            }
         }
     }
 
