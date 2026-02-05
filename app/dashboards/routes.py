@@ -168,10 +168,9 @@ def director_dashboard():
     # Rejected requests
     rejected_requests = SickLeaveRequest.query.filter_by(overall_status='Rejected').count()
     
-    # Low stock medicines
-    low_stock = Medicine.query.filter(
-        Medicine.quantity <= Medicine.min_stock_level
-    ).count()
+    # Count medicines with low stock, considering only non-expired batches
+    all_medicines = Medicine.query.all()
+    low_stock_medicines = sum(1 for medicine in all_medicines if medicine.is_low_stock)
     
     # Assets needing maintenance
     poor_assets = Asset.query.filter(
@@ -190,7 +189,7 @@ def director_dashboard():
         'total_visits': total_visits,
         'total_medicines': total_medicines,
         'total_assets': total_assets,
-        'low_stock_medicines': low_stock,
+        'low_stock_medicines': low_stock_medicines,
         'poor_assets': poor_assets,
         'pending_director_requests': pending_director_requests,
         'rejected_requests': rejected_requests,
