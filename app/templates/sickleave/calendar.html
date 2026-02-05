@@ -219,8 +219,8 @@ function renderCalendar() {
                     dayEvents.forEach(event => {
                         const icon = event.type === 'Sick Food' ? '🍲' : '🏥';
                         const viewUrl = `/sickleave/${event.request_id}`;
-                        content += `<a href="${viewUrl}" 
-                                      class="badge bg-${event.color} text-decoration-none d-block mb-1" 
+                        // content += `<a href="${viewUrl}" class="badge bg-${event.color} text-decoration-none d-block mb-1" 
+                        content += `<a                      class="badge bg-${event.color} text-decoration-none d-block mb-1" 
                                       style="font-size: 0.7rem; cursor: pointer;" 
                                       title="${event.student} - ${event.type}">
                                       ${icon} ${event.type.split(' ')[0]}
