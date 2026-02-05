@@ -5,7 +5,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import current_user, login_required
 from datetime import datetime
 from ..extensions import db
-from app.models import Student, DoctorVisit, Prescription, PrescriptionItem, Medicine, DummyMedicine, StockMovement, User
+from app.models import Student, DoctorVisit, Prescription, PrescriptionItem, Medicine, DummyMedicine, StockMovement, User, MedicineBatch, BatchDispensing
 from app.auth.utils import role_required
 
 health_bp = Blueprint('health', __name__, template_folder='../templates/health')
@@ -211,6 +211,9 @@ def prescribe_during_visit(visit_id):
         return redirect(url_for('health.view_visit', visit_id=visit_id))
     
     medicines = Medicine.query.all()
+    # Add total_batch_quantity to each medicine for accurate stock display (non-expired batches only)
+    for medicine in medicines:
+        medicine.display_quantity = medicine.total_batch_quantity
     return render_template('health/prescribe_during_visit.html', visit=visit, medicines=medicines)
 
 
@@ -228,7 +231,7 @@ def prescriptions_list():
         query = query.filter_by(student_id=student_id)
     
     if status:
-        query = query.filter_by(status=status)
+        query = query.filter_by(overall_status=status)
     
     prescriptions = query.order_by(Prescription.created_at.desc()).paginate(page=page, per_page=20)
     
@@ -240,6 +243,8 @@ def prescriptions_list():
 def create_prescription():
     """Create a new prescription with multiple medicines"""
     if request.method == 'POST':
+        import json
+        
         student_id = request.form.get('student_id', type=int)
         visit_id = request.form.get('visit_id', type=int)
         notes = request.form.get('notes', '').strip()
@@ -248,6 +253,7 @@ def create_prescription():
         
         # Get medicine IDs and quantities from form
         medicine_ids = request.form.getlist('medicine_id')
+        is_new_medicine_list = request.form.getlist('is_new_medicine[]')
         
         if not medicine_ids or len(medicine_ids) == 0:
             flash('Please add at least one medicine to the prescription.', 'danger')
@@ -277,10 +283,76 @@ def create_prescription():
         
         # Add prescription items
         item_count = 0
+        out_of_stock_items = []  # Track which items will use dummy medicines
+        new_medicines_created = []  # Track newly created medicines
+        
         for idx, medicine_id in enumerate(medicine_ids):
             if not medicine_id:
                 continue
             
+            # Handle new medicine creation
+            if medicine_id == 'NEW':
+                try:
+                    # Get the JSON data from the hidden field
+                    medicine_json = is_new_medicine_list[idx] if idx < len(is_new_medicine_list) else '{}'
+                    
+                    # Skip empty values
+                    if not medicine_json or medicine_json == '{}':
+                        flash('Please fill in all medicine details.', 'warning')
+                        continue
+                    
+                    medicine_data = json.loads(medicine_json)
+                    
+                    # Validate required fields
+                    if not medicine_data.get('name'):
+                        flash('Medicine name is required.', 'warning')
+                        continue
+                    
+                    # Create new dummy medicine
+                    dummy_medicine = DummyMedicine(
+                        name=medicine_data.get('name'),
+                        generic_name=medicine_data.get('generic_name'),
+                        dosage=medicine_data.get('dosage'),
+                        unit=medicine_data.get('unit')
+                    )
+                    db.session.add(dummy_medicine)
+                    db.session.flush()
+                    
+                    dosage = request.form.getlist('dosage[]')[idx] if idx < len(request.form.getlist('dosage[]')) else medicine_data.get('dosage', '')
+                    frequency = request.form.getlist('frequency[]')[idx] if idx < len(request.form.getlist('frequency[]')) else ''
+                    duration_days = request.form.getlist('duration_days[]')[idx] if idx < len(request.form.getlist('duration_days[]')) else '0'
+                    quantity = request.form.getlist('quantity_prescribed[]')[idx] if idx < len(request.form.getlist('quantity_prescribed[]')) else '1'
+                    instructions = request.form.getlist('instructions[]')[idx] if idx < len(request.form.getlist('instructions[]')) else ''
+                    
+                    try:
+                        duration_days = int(duration_days) if duration_days else 0
+                        quantity = int(quantity) if quantity else 1
+                    except ValueError:
+                        flash(f'Invalid values for {medicine_data.get("name")}', 'warning')
+                        continue
+                    
+                    frequency_text = frequency_map.get(frequency, frequency)
+                    
+                    # Create prescription item linked to dummy medicine
+                    item = PrescriptionItem(
+                        prescription_id=prescription.id,
+                        dummy_medicine_id=dummy_medicine.id,
+                        dosage=dosage.strip() or None,
+                        frequency=frequency_text.strip() or None,
+                        duration_days=duration_days,
+                        quantity_prescribed=quantity,
+                        instructions=instructions.strip() or None,
+                        status='OUT_OF_STOCK'  # New medicines are marked as out of stock
+                    )
+                    db.session.add(item)
+                    item_count += 1
+                    new_medicines_created.append(f'{medicine_data.get("name")} ({medicine_data.get("dosage", "")})')
+                    continue
+                except (json.JSONDecodeError, KeyError, ValueError) as e:
+                    flash(f'Error creating new medicine: {str(e)}', 'warning')
+                    continue
+            
+            # Handle existing medicines
             medicine = Medicine.query.get(medicine_id)
             if not medicine:
                 continue
@@ -299,6 +371,10 @@ def create_prescription():
                 continue
             
             frequency_text = frequency_map.get(frequency, frequency)
+            
+            # Check stock availability
+            if medicine.total_batch_quantity < quantity:
+                out_of_stock_items.append(f'{medicine.name} (need: {quantity}, available: {medicine.total_batch_quantity})')
             
             item = PrescriptionItem(
                 prescription_id=prescription.id,
@@ -320,10 +396,24 @@ def create_prescription():
         
         db.session.commit()
         flash(f'Prescription created with {item_count} medicine(s). Ready for dispensing.', 'success')
+        
+        # Warn about new medicines created
+        if new_medicines_created:
+            success_msg = 'New medicines added to prescription: ' + '; '.join(new_medicines_created) + '. These can be replaced with real medicines once stock arrives.'
+            flash(success_msg, 'info')
+        
+        # Warn about out-of-stock items that may use dummy medicines
+        if out_of_stock_items:
+            warning_msg = 'The following medicines are out of stock and may need to be created as dummy medicines: ' + '; '.join(out_of_stock_items)
+            flash(warning_msg, 'warning')
+        
         return redirect(url_for('health.view_prescription', prescription_id=prescription.id))
     
     students = Student.query.all()
     medicines = Medicine.query.all()  # Show all medicines
+    # Add total_batch_quantity to each medicine for accurate stock display (non-expired batches only)
+    for medicine in medicines:
+        medicine.display_quantity = medicine.total_batch_quantity
     
     return render_template('health/create_prescription.html', students=students, medicines=medicines)
 
@@ -331,7 +421,7 @@ def create_prescription():
 @health_bp.route('/prescriptions/<int:prescription_id>/dispense', methods=['POST'])
 @role_required('H2')
 def dispense_prescription(prescription_id):
-    """Dispense prescription item with per-medicine dispensing support"""
+    """Dispense prescription item with FEFO (First-Expire-First-Out) batch tracking"""
     prescription = Prescription.query.get_or_404(prescription_id)
     
     if prescription.overall_status == 'DISPENSED':
@@ -349,7 +439,7 @@ def dispense_prescription(prescription_id):
         return redirect(url_for('health.view_prescription', prescription_id=prescription.id))
     
     if item.status == 'DISPENSED':
-        flash(f'Medicine {item.medicine.name} has already been fully dispensed.', 'warning')
+        flash(f'Medicine {item.get_medicine().name} has already been fully dispensed.', 'warning')
         return redirect(url_for('health.view_prescription', prescription_id=prescription.id))
     
     # Default to remaining quantity if not specified
@@ -368,14 +458,74 @@ def dispense_prescription(prescription_id):
         flash(f'Medicine not found in inventory. Item marked as OUT_OF_STOCK.', 'warning')
         return redirect(url_for('health.view_prescription', prescription_id=prescription.id))
     
-    # Check stock
-    if medicine.quantity < quantity_to_dispense:
+    # Use FEFO batch dispensing logic
+    remaining_to_dispense = quantity_to_dispense
+    batches_used = []
+    
+    # Get all batches with available stock, ordered by FEFO principle
+    # EXCLUDE expired batches - do not dispense expired medicines
+    available_batches = MedicineBatch.query.filter(
+        MedicineBatch.medicine_id == medicine.id,
+        MedicineBatch.available_quantity > 0
+    ).all()
+    
+    # Filter out expired batches
+    non_expired_batches = [b for b in available_batches if not b.is_expired]
+    
+    # Check if there are any non-expired batches
+    if not non_expired_batches:
         item.status = 'OUT_OF_STOCK'
         db.session.commit()
-        flash(f'Insufficient stock for {medicine.name}. Available: {medicine.quantity}, Required: {quantity_to_dispense}. Item marked as OUT_OF_STOCK.', 'warning')
+        expired_count = sum(1 for b in available_batches if b.is_expired)
+        if expired_count > 0:
+            flash(f'Cannot dispense {medicine.name}. All available batches are EXPIRED. Please do not dispense expired medication.', 'danger')
+        else:
+            flash(f'Insufficient stock for {medicine.name}. No available batches. Item marked as OUT_OF_STOCK.', 'warning')
         return redirect(url_for('health.view_prescription', prescription_id=prescription.id))
     
-    # Dispense the medicine
+    # Sort non-expired batches by FEFO principle
+    available_batches = sorted(non_expired_batches, key=lambda b: (b.expiry_date, b.created_at))
+    
+    # Check if there's enough stock
+    total_available = sum(b.available_quantity for b in available_batches)
+    if total_available < quantity_to_dispense:
+        item.status = 'OUT_OF_STOCK'
+        db.session.commit()
+        flash(f'Insufficient stock for {medicine.name}. Available: {total_available}, Required: {quantity_to_dispense}. Item marked as OUT_OF_STOCK.', 'warning')
+        return redirect(url_for('health.view_prescription', prescription_id=prescription.id))
+    
+    # Dispense from batches using FEFO principle
+    for batch in available_batches:
+        if remaining_to_dispense <= 0:
+            break
+        
+        # Determine how much to dispense from this batch
+        quantity_from_batch = min(remaining_to_dispense, batch.available_quantity)
+        
+        # Update batch quantity
+        batch.available_quantity -= quantity_from_batch
+        batch.updated_at = datetime.utcnow()
+        
+        # Record batch dispensing for traceability
+        batch_dispensing = BatchDispensing(
+            prescription_item_id=item.id,
+            batch_id=batch.id,
+            quantity_dispensed=quantity_from_batch,
+            dispensed_by_id=current_user.id,
+            dispensed_at=datetime.utcnow(),
+            notes=f'Batch {batch.batch_number} from {batch.shelf_location}'
+        )
+        db.session.add(batch_dispensing)
+        batches_used.append({
+            'batch_number': batch.batch_number,
+            'shelf': batch.shelf_location,
+            'quantity': quantity_from_batch,
+            'expiry': batch.expiry_date.strftime('%Y-%m-%d')
+        })
+        
+        remaining_to_dispense -= quantity_from_batch
+    
+    # Update prescription item
     item.quantity_dispensed += quantity_to_dispense
     
     # Update item status
@@ -386,37 +536,62 @@ def dispense_prescription(prescription_id):
     
     item.dispensed_date = datetime.utcnow()
     
-    # Reduce stock
+    # Update medicine total quantity (derived from batches)
     medicine.quantity -= quantity_to_dispense
+    medicine.updated_at = datetime.utcnow()
     
     # Record stock movement
+    batches_info = ' | '.join([f"Batch {b['batch_number']} ({b['quantity']} units, Expiry: {b['expiry']})" for b in batches_used])
     stock_movement = StockMovement(
         medicine_id=medicine.id,
         user_id=current_user.id,
         movement_type='DISPENSE',
         quantity=quantity_to_dispense,
-        reason=f'Prescription dispensed to {prescription.student.roll_number} - {quantity_to_dispense} units',
+        reason=f'Prescription to {prescription.student.roll_number} - {batches_info}',
         reference_id=item.id
     )
     db.session.add(stock_movement)
     db.session.commit()
     
+    # Build success message with shelf and batch details
+    batch_details = ' | '.join([f"{b['batch_number']} ({b['quantity']} units from {b['shelf']})" for b in batches_used])
     status_text = 'fully' if item.status == 'DISPENSED' else 'partially'
-    flash(f'{medicine.name} {status_text} dispensed. {quantity_to_dispense} units reduced from stock.', 'success')
+    flash(f'✓ {medicine.name} {status_text} dispensed. Source: {batch_details}. FEFO principle applied.', 'success')
     return redirect(url_for('health.view_prescription', prescription_id=prescription.id))
 
 
 @health_bp.route('/prescriptions/<int:prescription_id>')
 @role_required('H2', 'Warden', 'Director', 'Doctor', 'Student')
 def view_prescription(prescription_id):
-    """View prescription details"""
+    """View prescription details with FEFO batch information"""
     prescription = Prescription.query.get_or_404(prescription_id)
     
     if current_user.role == 'Student' and current_user.id != prescription.student.user_id:
         flash('You do not have permission to view this record.', 'danger')
         return redirect(url_for('dashboards.dashboard'))
     
-    return render_template('health/view_prescription.html', prescription=prescription)
+    # Prepare batch information for each prescription item (for FEFO display)
+    item_batches = {}
+    for item in prescription.items:
+        if item.medicine and item.status != 'DISPENSED':
+            # Get recommended FEFO batch
+            batch = item.medicine.get_fefo_batch()
+            if batch:
+                item_batches[item.id] = {
+                    'batch_number': batch.batch_number,
+                    'shelf_location': batch.shelf_location,
+                    'available': batch.available_quantity,
+                    'expiry': batch.expiry_date.strftime('%Y-%m-%d'),
+                    'days_to_expiry': batch.days_to_expiry
+                }
+            else:
+                item_batches[item.id] = None
+        else:
+            item_batches[item.id] = None
+    
+    return render_template('health/view_prescription.html', 
+                          prescription=prescription,
+                          item_batches=item_batches)
 
 
 @health_bp.route('/prescriptions/replace-dummy/<int:item_id>', methods=['GET', 'POST'])
@@ -433,9 +608,12 @@ def replace_dummy_medicine(item_id):
         real_medicine_id = request.form.get('medicine_id', type=int)
         real_medicine = Medicine.query.get_or_404(real_medicine_id)
         
+        # Get dummy BEFORE clearing the relationship
+        dummy = item.dummy_medicine
+        
         # Verify new medicine has sufficient stock
-        if real_medicine.quantity < item.quantity_prescribed:
-            flash(f'Insufficient stock for {real_medicine.name}. Required: {item.quantity_prescribed}, Available: {real_medicine.quantity}', 'danger')
+        if real_medicine.total_batch_quantity < item.quantity_prescribed:
+            flash(f'Insufficient stock for {real_medicine.name}. Required: {item.quantity_prescribed}, Available: {real_medicine.total_batch_quantity}', 'danger')
             return redirect(url_for('health.replace_dummy_medicine', item_id=item_id))
         
         # Update prescription item
@@ -444,7 +622,6 @@ def replace_dummy_medicine(item_id):
         item.status = 'PENDING'  # Reset to PENDING
         
         # Mark dummy as replaced
-        dummy = item.dummy_medicine
         dummy.is_replaced = True
         dummy.replaced_by_id = real_medicine_id
         
@@ -455,7 +632,9 @@ def replace_dummy_medicine(item_id):
     
     # Get available real medicines that could replace this dummy
     dummy = item.dummy_medicine
-    similar_medicines = Medicine.query.filter(Medicine.quantity > 0).all()
+    all_medicines = Medicine.query.all()
+    # Filter only medicines with non-expired batch stock available
+    similar_medicines = [m for m in all_medicines if m.total_batch_quantity > 0]
     
     return render_template('health/replace_dummy_medicine.html', item=item, dummy=dummy, medicines=similar_medicines)
 
@@ -471,3 +650,88 @@ def print_prescription(prescription_id):
                           prescription=prescription,
                           include_dummy_details=include_dummy_details,
                           now=datetime.now())
+
+
+# ============================================================================
+# BATCH MANAGEMENT ROUTES - For FEFO (First-Expire-First-Out) Dispensing
+# ============================================================================
+
+@health_bp.route('/medicines/<int:medicine_id>/batches')
+@role_required('H2', 'Director')
+def view_medicine_batches(medicine_id):
+    """View all batches for a specific medicine"""
+    medicine = Medicine.query.get_or_404(medicine_id)
+    
+    # Get all batches ordered by FEFO principle
+    batches = MedicineBatch.query.filter_by(medicine_id=medicine_id).order_by(
+        MedicineBatch.expiry_date.asc(),
+        MedicineBatch.created_at.asc()
+    ).all()
+    
+    return render_template('health/medicine_batches.html', 
+                          medicine=medicine,
+                          batches=batches)
+
+
+@health_bp.route('/medicines/<int:medicine_id>/batches/add', methods=['GET', 'POST'])
+@role_required('H2', 'Director')
+def add_medicine_batch(medicine_id):
+    """Add a new batch of medicine with shelf location"""
+    medicine = Medicine.query.get_or_404(medicine_id)
+    
+    if request.method == 'POST':
+        batch_number = request.form.get('batch_number')
+        quantity = request.form.get('quantity', type=int)
+        expiry_date_str = request.form.get('expiry_date')
+        shelf_location = request.form.get('shelf_location')
+        cost_per_unit = request.form.get('cost_per_unit', type=float)
+        
+        if not all([batch_number, quantity, expiry_date_str, shelf_location]):
+            flash('All fields are required.', 'danger')
+            return redirect(url_for('health.add_medicine_batch', medicine_id=medicine_id))
+        
+        try:
+            from datetime import datetime as dt
+            expiry_date = dt.strptime(expiry_date_str, '%Y-%m-%d').date()
+        except ValueError:
+            flash('Invalid expiry date format.', 'danger')
+            return redirect(url_for('health.add_medicine_batch', medicine_id=medicine_id))
+        
+        # Create batch
+        batch = MedicineBatch(
+            medicine_id=medicine_id,
+            batch_number=batch_number,
+            quantity=quantity,
+            available_quantity=quantity,
+            expiry_date=expiry_date,
+            shelf_location=shelf_location,
+            cost_per_unit=cost_per_unit,
+            date_added=datetime.utcnow()
+        )
+        
+        # Update medicine total quantity
+        medicine.quantity += quantity
+        medicine.updated_at = datetime.utcnow()
+        
+        db.session.add(batch)
+        db.session.commit()
+        
+        flash(f'Batch {batch_number} added successfully. {quantity} units added to {medicine.name}.', 'success')
+        return redirect(url_for('health.view_medicine_batches', medicine_id=medicine_id))
+    
+    return render_template('health/add_medicine_batch.html', medicine=medicine)
+
+
+@health_bp.route('/batches/<int:batch_id>/dispensing-history')
+@role_required('H2', 'Director')
+def batch_dispensing_history(batch_id):
+    """View dispensing history for a specific batch"""
+    batch = MedicineBatch.query.get_or_404(batch_id)
+    dispensings = BatchDispensing.query.filter_by(batch_id=batch_id).order_by(
+        BatchDispensing.dispensed_at.desc()
+    ).all()
+    
+    return render_template('health/batch_dispensing_history.html',
+                          batch=batch,
+                          dispensings=dispensings,
+                          now=datetime.utcnow())

@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}{{ medicine.name }} - Batches{% endblock %}
+
+{% block content %}
+<style>
+    .batch-card {
+        border-left: 4px solid var(--bs-info);
+        margin-bottom: 1rem;
+    }
+
+    .batch-card.expired {
+        border-left-color: var(--bs-danger);
+        background-color: #fff5f5;
+    }
+
+    .batch-card.expiring-soon {
+        border-left-color: var(--bs-warning);
+        background-color: #fffbf0;
+    }
+
+    .batch-status {
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .fefo-badge {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-block;
+    }
+
+    .batch-stats {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .stat-item {
+        text-align: center;
+    }
+
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--bs-primary);
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+        font-size: 0.85rem;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-10 offset-md-1">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2><i class="bi bi-box-seam"></i> {{ medicine.name }} - Batch Management</h2>
+                    <small class="text-muted">Generic: {{ medicine.generic_name or 'N/A' }} | Unit: {{ medicine.unit }}</small>
+                </div>
+                <a href="{{ url_for('health.add_medicine_batch', medicine_id=medicine.id) }}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Add Batch
+                </a>
+            </div>
+
+            <!-- Statistics -->
+            <div class="batch-stats">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="stat-item">
+                            <div class="stat-value">{{ batches|length }}</div>
+                            <div class="stat-label">Total Batches</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-item">
+                            <div class="stat-value">{{ medicine.total_batch_quantity }}</div>
+                            <div class="stat-label">Total Stock (Non-Expired)</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-item">
+                            <div class="stat-value">{{ batches|selectattr('is_expired', 'false')|list|length }}</div>
+                            <div class="stat-label">Non-Expired</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-item">
+                            <div class="stat-value">{{ batches|selectattr('is_expired', 'true')|list|length }}</div>
+                            <div class="stat-label">Expired</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Batches List -->
+            {% if batches|length > 0 %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-list"></i> Batches (Ordered by FEFO - Oldest First)</h5>
+                </div>
+                <div class="card-body">
+                    {% for batch in batches %}
+                    <div class="card batch-card {% if batch.is_expired %}expired{% elif batch.days_to_expiry < 30 %}expiring-soon{% endif %}">
+                        <div class="card-header d-flex justify-content-between align-items-center" style="background-color: transparent; border-bottom: 1px solid var(--bs-border-color);">
+                            <div>
+                                <h6 class="mb-1">
+                                    <strong>{{ batch.batch_number }}</strong>
+                                    {% if batch.is_expired %}
+                                    <span class="badge bg-danger">EXPIRED</span>
+                                    {% elif batch.days_to_expiry < 30 %}
+                                    <span class="badge bg-warning">EXPIRING SOON</span>
+                                    {% else %}
+                                    <span class="badge bg-success">ACTIVE</span>
+                                    {% endif %}
+                                </h6>
+                                <small class="text-muted">
+                                    <i class="bi bi-geo-alt"></i> {{ batch.shelf_location }} 
+                                    | Added: {{ batch.date_added.strftime('%Y-%m-%d') if batch.date_added else 'N/A' }}
+                                </small>
+                            </div>
+                            <div>
+                                {% if loop.first and not batch.is_expired %}
+                                <span class="fefo-badge"><i class="bi bi-arrow-up"></i> NEXT TO DISPENSE</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-3">
+                                    <small class="text-muted">Total Quantity</small>
+                                    <p class="mb-0"><strong>{{ batch.quantity }} {{ medicine.unit }}</strong></p>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted">Available Quantity</small>
+                                    <p class="mb-0"><strong>{{ batch.available_quantity }} {{ medicine.unit }}</strong></p>
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted">Expiry Date</small>
+                                    <p class="mb-0"><strong>{{ batch.expiry_date.strftime('%Y-%m-%d') }}</strong></p>
+                                    {% if not batch.is_expired %}
+                                    <small class="text-muted">({{ batch.days_to_expiry }} days left)</small>
+                                    {% else %}
+                                    <small class="text-danger"><strong>EXPIRED</strong></small>
+                                    {% endif %}
+                                </div>
+                                <div class="col-md-3">
+                                    <small class="text-muted">Cost per Unit</small>
+                                    <p class="mb-0"><strong>₹{{ batch.cost_per_unit or '0' }}</strong></p>
+                                </div>
+                            </div>
+
+                            <div class="row mt-3 pt-3 border-top">
+                                <div class="col-12">
+                                    <a href="{{ url_for('health.batch_dispensing_history', batch_id=batch.id) }}" class="btn btn-sm btn-info">
+                                        <i class="bi bi-clock-history"></i> View Dispensing History
+                                    </a>
+                                    {% if not batch.is_expired %}
+                                    <button class="btn btn-sm btn-warning" disabled title="Edit functionality coming soon">
+                                        <i class="bi bi-pencil"></i> Edit
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle"></i> <strong>No Batches Found:</strong> 
+                No batches have been added for this medicine yet.
+                <a href="{{ url_for('health.add_medicine_batch', medicine_id=medicine.id) }}" class="alert-link">Add first batch</a>
+            </div>
+            {% endif %}
+
+            <!-- Actions -->
+            <div class="d-flex gap-2 mt-4 flex-wrap">
+                <a href="{{ url_for('stock.view_medicine', medicine_id=medicine.id) }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Medicine Details
+                </a>
+                <a href="{{ url_for('stock.inventory') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-box"></i> Back to Inventory
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Auto-refresh page every 5 minutes to update "days to expiry"
+    setTimeout(function() {
+        location.reload();
+    }, 5 * 60 * 1000);
+</script>
+{% endblock %}

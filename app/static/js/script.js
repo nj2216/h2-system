@@ -1,6 +1,8 @@
 // H2 System Custom JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
+    const a = document.getElementById('this_year');
+    a.innerText = new Date().getFullYear();
     // Initialize tooltips
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
     tooltipTriggerList.map(function (tooltipTriggerEl) {

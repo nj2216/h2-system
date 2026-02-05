@@ -37,6 +37,53 @@
         border-radius: 0.5rem;
         margin-top: 1rem;
     }
+
+    .fefo-info {
+        background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+        border-left: 4px solid var(--bs-primary);
+        padding: 0.75rem;
+        border-radius: 0.25rem;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+    }
+
+    .fefo-label {
+        font-weight: 600;
+        color: var(--bs-primary);
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.25rem;
+    }
+
+    .fefo-value {
+        font-size: 1rem;
+        color: var(--bs-body-color);
+    }
+
+    .fefo-row {
+        display: flex;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .fefo-item {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .expiry-warning {
+        color: #ff6b6b;
+        font-weight: 600;
+    }
+
+    .dispense-success-msg {
+        background-color: #d4edda;
+        border-left: 4px solid #28a745;
+        padding: 1rem;
+        border-radius: 0.25rem;
+        margin-bottom: 1rem;
+    }
 </style>
 
 <div class="container mt-4">
@@ -70,7 +117,7 @@
                             <strong>Visit ID:</strong> <a href="{{ url_for('health.view_visit', visit_id=prescription.visit_id) }}">#{{ prescription.visit_id }}</a>
                         </div>
                         <div class="col-md-6">
-                            <strong>Created By:</strong> {{ prescription.created_by.username if prescription.created_by else 'N/A' }}
+                            <strong>Created By:</strong> {{ prescription.created_by_id if prescription.created_by_id else 'N/A' }}
                         </div>
                     </div>
                     {% endif %}
@@ -100,7 +147,8 @@
                                     <small class="text-muted">Generic: {{ item.get_medicine().generic_name or '-' }} | Dosage: {{ item.dosage or '-' }} | Frequency: {{ item.frequency or '-' }}</small>
                                 </div>
                                 <div>
-                                    <span class="badge bg-{{ item.status|lower }}">
+                                    {% set item_color = 'warning' if item.status == 'PENDING' else 'info' if item.status == 'PARTIAL' else 'success' if item.status == 'DISPENSED' else 'danger' if item.status == 'OUT_OF_STOCK' else 'secondary' %}
+                                    <span class="badge bg-{{ item_color }}">
                                         {{ item.status }}
                                     </span>
                                 </div>
@@ -161,6 +209,40 @@
                                 <form method="POST" action="{{ url_for('health.dispense_prescription', prescription_id=prescription.id) }}" class="dispense-form">
                                     <input type="hidden" name="item_id" value="{{ item.id }}">
                                     
+                                    <!-- FEFO Batch Information Display -->
+                                    {% if item_batches[item.id] %}
+                                    <div class="fefo-info">
+                                        <div class="fefo-label"><i class="bi bi-box-seam"></i> FEFO Dispensing Source (Auto-Selected)</div>
+                                        <div class="fefo-row">
+                                            <div class="fefo-item">
+                                                <div class="fefo-label">Batch Number</div>
+                                                <div class="fefo-value">{{ item_batches[item.id]['batch_number'] }}</div>
+                                            </div>
+                                            <div class="fefo-item">
+                                                <div class="fefo-label">Shelf Location</div>
+                                                <div class="fefo-value"><i class="bi bi-geo-alt-fill"></i> {{ item_batches[item.id]['shelf_location'] }}</div>
+                                            </div>
+                                            <div class="fefo-item">
+                                                <div class="fefo-label">Available in Batch</div>
+                                                <div class="fefo-value">{{ item_batches[item.id]['available'] }} units</div>
+                                            </div>
+                                            <div class="fefo-item">
+                                                <div class="fefo-label">Expiry Date</div>
+                                                <div class="fefo-value">
+                                                    {{ item_batches[item.id]['expiry'] }}
+                                                    {% if item_batches[item.id]['days_to_expiry'] < 30 %}
+                                                    <span class="expiry-warning" title="Expires soon"> ({{ item_batches[item.id]['days_to_expiry'] }} days left)</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <div class="alert alert-danger mb-3">
+                                        <i class="bi bi-exclamation-triangle"></i> <strong>No Stock Available:</strong> No batches with available stock found for this medicine.
+                                    </div>
+                                    {% endif %}
+                                    
                                     <div class="row">
                                         <div class="col-md-6 mb-2">
                                             <label class="form-label"><small>Quantity to Dispense</small></label>
@@ -170,7 +252,7 @@
                                             <small class="text-muted">Max: {{ item.quantity_prescribed - item.quantity_dispensed }}</small>
                                         </div>
                                         <div class="col-md-6 d-flex align-items-end mb-2">
-                                            <button type="submit" class="btn btn-sm btn-success w-100">
+                                            <button type="submit" class="btn btn-sm btn-success w-100" {% if not item_batches[item.id] %}disabled{% endif %}>
                                                 <i class="bi bi-check-circle"></i> Dispense
                                             </button>
                                         </div>

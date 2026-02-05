@@ -172,12 +172,20 @@
                 <label class="form-label fw-600">Medicine <span class="text-danger">*</span></label>
                 <select class="form-select select2-med" name="medicine_id" required onchange="updateMedicineDetails(this)">
                     <option value="">Select a medicine...</option>
+                    <option value="NEW" data-stock="0" style="color: #28a745; font-weight: bold;">
+                        ➕ Add New Medicine Not in List
+                    </option>
                     {% for medicine in medicines %}
-                    <option value="{{ medicine.id }}" data-stock="{{ medicine.quantity }}" data-dosage="{{ medicine.dosage }}" data-unit="{{ medicine.unit }}" data-generic="{{ medicine.generic_name or '' }}">
-                        {{ medicine.name }} ({{ medicine.dosage }}) – Stock: {{ medicine.quantity }} {{ medicine.unit }}
+                    <option value="{{ medicine.id }}" data-stock="{{ medicine.display_quantity }}" data-dosage="{{ medicine.dosage }}" data-unit="{{ medicine.unit }}" data-generic="{{ medicine.generic_name or '' }}">
+                        {% if medicine.display_quantity == 0 %}
+                        ⚠️ {{ medicine.name }} ({{ medicine.dosage }}) – OUT OF STOCK
+                        {% else %}
+                        {{ medicine.name }} ({{ medicine.dosage }}) – Stock: {{ medicine.display_quantity }} {{ medicine.unit }}
+                        {% endif %}
                     </option>
                     {% endfor %}
                 </select>
+                <small class="form-text text-muted d-block mt-2">⚠️ Out-of-stock medicines will be created as dummy medicines for later replacement.</small>
             </div>
 
             <div class="col-md-3 mb-3">
@@ -189,7 +197,7 @@
                 <label class="form-label">Stock Available</label>
                 <div class="input-group">
                     <input type="text" class="form-control stock-field" readonly placeholder="0">
-                    <span class="input-group-text unit-field">units</span>
+                    <span class="input-group-text stock-badge" style="background-color: var(--bs-secondary-bg);">OK</span>
                 </div>
             </div>
         </div>
@@ -217,13 +225,13 @@
 
             <div class="col-md-3 mb-3">
                 <label class="form-label fw-600">Quantity <span class="text-danger">*</span></label>
-                <input type="number" class="form-control quantity-field" name="quantity_prescribed[]" min="1" value="1" required readonly style="background-color: var(--bs-light);">
+                <input type="number" class="form-control quantity-field" name="quantity_prescribed[]" min="1" value="1" required readonly style="background-color: var(--bs-secondary-bg);">
                 <small class="text-muted">Auto-calculated</small>
             </div>
 
             <div class="col-md-3 mb-3">
                 <label class="form-label">Status</label>
-                <input type="text" class="form-control status-field" value="PENDING" readonly style="background-color: var(--bs-warning); opacity: 0.7;">
+                <input type="text" class="form-control status-field" value="PENDING" readonly style="background-color: var(--bs-warning); opacity: 0.7; color: var(--bs-emphasis-color);">
             </div>
         </div>
 
@@ -240,13 +248,62 @@
                 <textarea class="form-control" name="instructions[]" rows="2" placeholder="e.g., Take with food, avoid dairy products"></textarea>
             </div>
         </div>
+        
+        <!-- Hidden field to store new medicine data if medicine_id is 'NEW' -->
+        <input type="hidden" name="is_new_medicine[]" class="new_medicine_data" value="">
     </div>
 </template>
+
+<!-- New Medicine Modal -->
+<div class="modal fade" id="newMedicineModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Medicine</h5>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-600">Medicine Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="newMedicineName" placeholder="e.g., Azithromycin">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Generic Name</label>
+                    <input type="text" class="form-control" id="newMedicineGeneric" placeholder="e.g., Azithromycin">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Dosage (e.g., 500mg)</label>
+                    <input type="text" class="form-control" id="newMedicineDosage" placeholder="e.g., 500mg Tablets">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Unit</label>
+                    <select class="form-select" id="newMedicineUnit">
+                        <option>Tablets</option>
+                        <option>Capsules</option>
+                        <option>ml</option>
+                        <option>Injections</option>
+                        <option>Patches</option>
+                        <option>Cream</option>
+                        <option>Drops</option>
+                    </select>
+                </div>
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> This medicine will be created as a temporary placeholder and can be replaced later with the actual medicine from stock.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelNewMedicineBtn">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="confirmNewMedicine()">Add Medicine</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
     let medicineRowCount = 0;
+    let newMedicineModal = null;
+    let currentMedicineSelect = null;  // Track which select opened the modal
 
     function addMedicineRow() {
         const template = document.getElementById('medicineRowTemplate');
@@ -266,39 +323,6 @@
             setTimeout(() => row.remove(), 300);
         } else {
             alert('You must have at least one medicine in the prescription.');
-        }
-    }
-
-    function updateMedicineDetails(select) {
-        const option = select.options[select.selectedIndex];
-        const row = select.closest('.medicine-item');
-        
-        if (option.value) {
-            const dosage = option.getAttribute('data-dosage') || '';
-            const stock = option.getAttribute('data-stock') || '0';
-            const unit = option.getAttribute('data-unit') || 'units';
-            
-            row.querySelector('.dosage-field').value = dosage;
-            row.querySelector('.stock-field').value = stock;
-            row.querySelector('.unit-field').textContent = unit;
-            
-            // Show warning if out of stock
-            const quantityField = row.querySelector('.quantity-field');
-            const warningDiv = row.querySelector('.stock-status-warning');
-            
-            if (parseInt(stock) === 0) {
-                row.querySelector('.status-field').value = 'OUT_OF_STOCK';
-                warningDiv.style.display = 'block';
-            } else {
-                row.querySelector('.status-field').value = 'PENDING';
-                warningDiv.style.display = 'none';
-            }
-        } else {
-            row.querySelector('.dosage-field').value = '';
-            row.querySelector('.stock-field').value = '';
-            row.querySelector('.unit-field').textContent = 'units';
-            row.querySelector('.status-field').value = 'PENDING';
-            row.querySelector('.stock-status-warning').style.display = 'none';
         }
     }
 
@@ -374,6 +398,176 @@
 
         if (!validMedicines) {
             e.preventDefault();
+        }
+    });
+
+    // Handle new medicine selection
+    
+    function updateMedicineDetails(select) {
+        const value = select.value;
+        const row = select.closest('.medicine-item');
+        const hiddenField = row.querySelector('input[name="is_new_medicine[]"]');
+        
+        // Show modal for new medicine ONLY if it doesn't already have data
+        if (value === 'NEW') {
+            // Check if medicine data was already entered
+            if (hiddenField && hiddenField.value && hiddenField.value !== '{}') {
+                // Data already exists, just update display fields
+                try {
+                    const medicineData = JSON.parse(hiddenField.value);
+                    row.querySelector('.dosage-field').value = medicineData.dosage || '';
+                    row.querySelector('.stock-field').value = '0';
+                    const stockBadge = row.querySelector('.stock-badge');
+                    if (stockBadge) {
+                        stockBadge.textContent = 'NEW MEDICINE';
+                        stockBadge.style.backgroundColor = '#6f42c1';
+                        stockBadge.style.color = 'white';
+                    }
+                } catch(e) {
+                    console.error('Error parsing medicine data:', e);
+                }
+                return;
+            }
+            
+            // No data yet, show modal
+            document.getElementById('newMedicineName').value = '';
+            document.getElementById('newMedicineGeneric').value = '';
+            document.getElementById('newMedicineDosage').value = '';
+            document.getElementById('newMedicineUnit').value = 'Tablets';
+            
+            // Track which select opened the modal
+            currentMedicineSelect = select;
+            
+            // Initialize modal once if not already done
+            if (!newMedicineModal) {
+                newMedicineModal = new bootstrap.Modal(document.getElementById('newMedicineModal'));
+            }
+            newMedicineModal.show();
+            return;
+        }
+        
+        // Reset new medicine data when selecting existing medicine
+        const option = select.options[select.selectedIndex];
+        
+        if (option.value) {
+            const dosage = option.getAttribute('data-dosage') || '';
+            const stock = option.getAttribute('data-stock') || '0';
+            const unit = option.getAttribute('data-unit') || '';
+            
+            row.querySelector('.dosage-field').value = dosage;
+            const stockField = row.querySelector('.stock-field');
+            const stockBadge = row.querySelector('.stock-badge');
+            
+            stockField.value = stock;
+            row.querySelector('.unit-field').textContent = unit;
+            
+            // Update stock badge color
+            const stockNum = parseInt(stock);
+            if (stockNum === 0) {
+                stockBadge.textContent = 'OUT OF STOCK';
+                stockBadge.style.backgroundColor = '#dc3545';
+                stockBadge.style.color = 'white';
+                row.querySelector('.status-field').value = 'OUT_OF_STOCK';
+            } else if (stockNum < 5) {
+                stockBadge.textContent = 'LOW STOCK';
+                stockBadge.style.backgroundColor = '#ffc107';
+                stockBadge.style.color = 'black';
+                row.querySelector('.status-field').value = 'PENDING';
+            } else {
+                stockBadge.textContent = 'OK';
+                stockBadge.style.backgroundColor = '#28a745';
+                stockBadge.style.color = 'white';
+                row.querySelector('.status-field').value = 'PENDING';
+            }
+            
+            // Show warning if out of stock
+            const warningDiv = row.querySelector('.stock-status-warning');
+            if (stockNum === 0 && warningDiv) {
+                warningDiv.style.display = 'block';
+            } else if (warningDiv) {
+                warningDiv.style.display = 'none';
+            }
+        } else {
+            row.querySelector('.dosage-field').value = '';
+            row.querySelector('.stock-field').value = '';
+            row.querySelector('.unit-field').textContent = 'units';
+            row.querySelector('.status-field').value = 'PENDING';
+            const warningDiv = row.querySelector('.stock-status-warning');
+            if (warningDiv) warningDiv.style.display = 'none';
+            const stockBadge = row.querySelector('.stock-badge');
+            if (stockBadge) {
+                stockBadge.textContent = 'OK';
+                stockBadge.style.backgroundColor = '#d3d3d3';
+                stockBadge.style.color = 'black';
+            }
+        }
+    }
+    
+    function confirmNewMedicine() {
+        const name = document.getElementById('newMedicineName').value.trim();
+        const generic = document.getElementById('newMedicineGeneric').value.trim();
+        const dosage = document.getElementById('newMedicineDosage').value.trim();
+        const unit = document.getElementById('newMedicineUnit').value;
+        
+        if (!name) {
+            alert('Please enter medicine name');
+            return;
+        }
+        
+        const medicineData = {
+            name: name,
+            generic_name: generic || name,
+            dosage: dosage,
+            unit: unit
+        };
+        
+        // Close modal
+        if (newMedicineModal) {
+            newMedicineModal.hide();
+        }
+        
+        // Use the tracked select that opened the modal
+        if (currentMedicineSelect) {
+            const row = currentMedicineSelect.closest('.medicine-item');
+            const hiddenField = row.querySelector('input[name="is_new_medicine[]"]');
+            
+            // Store the medicine data in hidden field
+            if (hiddenField) {
+                hiddenField.value = JSON.stringify(medicineData);
+            }
+            
+            // Update dosage field
+            const dosageField = row.querySelector('.dosage-field');
+            if (dosageField) {
+                dosageField.value = dosage;
+            }
+            
+            // Update stock field and badge
+            const stockField = row.querySelector('.stock-field');
+            const stockBadge = row.querySelector('.stock-badge');
+            if (stockField) {
+                stockField.value = '0';
+            }
+            if (stockBadge) {
+                stockBadge.textContent = 'NEW MEDICINE';
+                stockBadge.style.backgroundColor = '#6f42c1';
+                stockBadge.style.color = 'white';
+            }
+            
+            // Reset tracking
+            currentMedicineSelect = null;
+        }
+    }
+
+    // Handle Cancel button for new medicine modal
+    document.getElementById('cancelNewMedicineBtn').addEventListener('click', function() {
+        // Reset the tracked select back to empty if cancelled
+        if (currentMedicineSelect) {
+            $(currentMedicineSelect).val('').trigger('change');
+            currentMedicineSelect = null;
+        }
+        if (newMedicineModal) {
+            newMedicineModal.hide();
         }
     });
 

@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Add Batch - {{ medicine.name }}{% endblock %}
+
+{% block content %}
+<style>
+    .form-section {
+        background-color: var(--light-bg);
+        border-left: 4px solid var(--bs-primary);
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .form-section h5 {
+        color: var(--bs-primary);
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .form-label {
+        font-weight: 600;
+        color: var(--bs-body-color);
+        margin-bottom: 0.5rem;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+    }
+
+    .required::after {
+        content: " *";
+        color: var(--bs-danger);
+        font-weight: 700;
+    }
+
+    .info-box {
+        background: linear-gradient(135deg, #e3f2fd 0%, #f3e5f5 100%);
+        border-left: 4px solid var(--bs-info);
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+        font-size: 0.95rem;
+    }
+
+    .btn-section {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+    }
+</style>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <!-- Header -->
+            <div class="mb-4">
+                <h2><i class="bi bi-box-seam-plus"></i> Add New Batch</h2>
+                <p class="text-muted"><strong>Medicine:</strong> {{ medicine.name }} ({{ medicine.generic_name or 'N/A' }})</p>
+            </div>
+
+            <!-- Info Box -->
+            <div class="info-box">
+                <i class="bi bi-info-circle"></i> <strong>Batch Information:</strong>
+                <p class="mb-0">A batch represents a specific quantity of medicine from a single manufacturer batch with a common expiry date and shelf location.</p>
+            </div>
+
+            <!-- Add Batch Form -->
+            <form method="POST" class="needs-validation">
+                <!-- Batch Details Section -->
+                <div class="form-section">
+                    <h5><i class="bi bi-box-seam"></i> Batch Details</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="batch_number" class="form-label required">Batch Number</label>
+                            <input type="text" class="form-control" id="batch_number" name="batch_number" 
+                                   placeholder="e.g., MFG-202401-ABC123" required>
+                            <small class="text-muted">Enter the manufacturer's batch number</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="quantity" class="form-label required">Quantity</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="quantity" name="quantity" 
+                                       min="1" placeholder="0" required>
+                                <span class="input-group-text">{{ medicine.unit }}</span>
+                            </div>
+                            <small class="text-muted">Total units in this batch</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stock & Location Section -->
+                <div class="form-section">
+                    <h5><i class="bi bi-geo-alt"></i> Stock Location</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="shelf_location" class="form-label required">Shelf Location</label>
+                            <input type="text" class="form-control" id="shelf_location" name="shelf_location" 
+                                   placeholder="e.g., Shelf A-3, Cabinet B" required>
+                            <small class="text-muted">Physical location where batch is stored</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="cost_per_unit" class="form-label">Cost per Unit</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₹</span>
+                                <input type="number" class="form-control" id="cost_per_unit" name="cost_per_unit" 
+                                       step="0.01" min="0" placeholder="0.00">
+                            </div>
+                            <small class="text-muted">Optional: For cost tracking</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Expiry Information Section -->
+                <div class="form-section">
+                    <h5><i class="bi bi-calendar-event"></i> Expiry Information</h5>
+                    
+                    <div class="mb-3">
+                        <label for="expiry_date" class="form-label required">Expiry Date</label>
+                        <input type="date" class="form-control" id="expiry_date" name="expiry_date" required>
+                        <small class="text-muted">Date when this batch expires and cannot be dispensed</small>
+                        <div id="expiry-warning" class="alert alert-warning mt-2" style="display:none;">
+                            <i class="bi bi-exclamation-triangle"></i> 
+                            <strong>Warning:</strong> This batch will expire soon or has already expired!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="btn-section">
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> Add Batch
+                    </button>
+                    <a href="{{ url_for('health.view_medicine_batches', medicine_id=medicine.id) }}" class="btn btn-secondary">
+                        <i class="bi bi-x-circle"></i> Cancel
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Check expiry date on change
+    document.getElementById('expiry_date').addEventListener('change', function() {
+        const expiryDate = new Date(this.value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        const warningDiv = document.getElementById('expiry-warning');
+        if (expiryDate <= today) {
+            warningDiv.style.display = 'block';
+        } else {
+            const daysUntilExpiry = Math.ceil((expiryDate - today) / (1000 * 60 * 60 * 24));
+            if (daysUntilExpiry < 30) {
+                warningDiv.innerHTML = `<i class="bi bi-exclamation-triangle"></i> 
+                    <strong>Warning:</strong> This batch will expire in ${daysUntilExpiry} days!`;
+                warningDiv.style.display = 'block';
+            } else {
+                warningDiv.style.display = 'none';
+            }
+        }
+    });
+
+    // Set minimum date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('expiry_date').setAttribute('min', today);
+</script>
+{% endblock %}

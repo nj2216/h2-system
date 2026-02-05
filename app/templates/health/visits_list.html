@@ -3,16 +3,27 @@
 {% block title %}Doctor Visits - H2 System{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-md-8">
-        <h2><i class="bi bi-calendar2-check"></i> Doctor Visits</h2>
-    </div>
-    <div class="col-md-4 text-end">
-        {% if current_user.role in ['H2', 'Doctor'] %}
-        <a href="{{ url_for('health.create_visit') }}" class="btn btn-primary">
-            <i class="bi bi-plus-circle"></i> Record Visit
-        </a>
-        {% endif %}
+<style>
+.doctor-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    margin-bottom: 2rem;
+}
+</style>
+<div class="doctor-header">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2><i class="bi bi-calendar2-check"></i> Doctor Visits</h2>
+        </div>
+        <div class="col-md-4 text-end">
+            {% if current_user.role in ['H2', 'Doctor'] %}
+            <a href="{{ url_for('health.create_visit') }}" class="btn btn-light btn-sm me-2">
+                <i class="bi bi-plus-circle"></i> Record Visit
+            </a>
+            {% endif %}
+        </div>
     </div>
 </div>
 
