@@ -67,9 +67,9 @@ def h2_dashboard():
     total_students = Student.query.count()
     total_visits = DoctorVisit.query.count()
     total_medicines = Medicine.query.count()
-    low_stock_medicines = Medicine.query.filter(
-        Medicine.quantity <= Medicine.min_stock_level
-    ).count()
+    # Count medicines with low stock, considering only non-expired batches
+    all_medicines = Medicine.query.all()
+    low_stock_medicines = sum(1 for medicine in all_medicines if medicine.is_low_stock)
     
     # Pending requests
     pending_h2_requests = SickLeaveRequest.query.filter_by(h2_status='Pending').count()
