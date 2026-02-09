@@ -5,21 +5,31 @@
 {% block content %}
 <style>
     .btn-group .btn { flex: 1; }
+
+    .issue-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+    }
 </style>
-<div class="container mt-4">
+<div class="issue-header">
     <div class="row mb-4">
         <div class="col-md-8">
             <h2><i class="bi bi-list-check"></i> Equipment Issues</h2>
         </div>
         <div class="col-md-4 text-end">
             {% if current_user.role in ['H2', 'Doctor'] %}
-            <a href="{{ url_for('equipment.issue_equipment') }}" class="btn btn-primary">
+            <a href="{{ url_for('equipment.issue_equipment') }}" class="btn btn-light btn-sm">
                 <i class="bi bi-plus-circle"></i> New Issue
             </a>
             {% endif %}
         </div>
     </div>
+</div>
 
+<div class="container mt-4">
     <!-- Status Filters -->
     <div class="mb-4">
         <div class="btn-group" role="group">

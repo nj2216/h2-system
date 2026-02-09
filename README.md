@@ -131,7 +131,7 @@ h2sqrr/
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/yourusername/h2sqrr.git
+git clone https://github.com/nj2216/h2-system.git
 cd h2sqrr
 ```
 

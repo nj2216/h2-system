@@ -5,25 +5,37 @@
 {% block content %}
 <style>
     .btn-group .btn { flex: 1; }
+    
+    .manage-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+    }
 </style>
-<div class="container mt-4">
+<div class="manage-header">
     <div class="row mb-4">
         <div class="col-md-8">
             <h2><i class="bi bi-gear"></i> Manage Medical Equipment</h2>
         </div>
-        <div class="col-md-4 text-end d-flex gap-2 justify-content-end flex-wrap">
-            <a href="{{ url_for('equipment.issue_list') }}" class="btn btn-info">
-                <i class="bi bi-list-check"></i> <span class="d-none d-sm-inline">View Issues</span>
-            </a>
-            <a href="{{ url_for('equipment.bulk_upload_equipment') }}" class="btn btn-success">
-                <i class="bi bi-cloud-upload"></i> <span class="d-none d-sm-inline">Bulk Upload</span>
-            </a>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEquipmentModal">
-                <i class="bi bi-plus-circle"></i> Add Equipment
-            </button>
+        <div class="col-md-4">
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <a href="{{ url_for('equipment.issue_list') }}" class="btn btn-light btn-sm me-2">
+                    <i class="bi bi-list-check"></i> <span class="d-none d-sm-inline">View Issues</span>
+                </a>
+                <a href="{{ url_for('equipment.bulk_upload_equipment') }}" class="btn btn-light bg-primary text-white btn-sm me-2">
+                    <i class="bi bi-cloud-upload"></i> <span class="d-none d-sm-inline">Bulk Upload</span>
+                </a>
+                <button class="btn btn-light bg-secondary text-white btn-sm me-2" data-bs-toggle="modal" data-bs-target="#addEquipmentModal">
+                    <i class="bi bi-plus-circle"></i> Add Equipment
+                </button>
+            </div>
         </div>
     </div>
+</div>
 
+<div class="container mt-4">
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
