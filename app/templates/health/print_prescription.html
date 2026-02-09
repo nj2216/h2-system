@@ -37,7 +37,7 @@
         }
 
         @page {
-            size: A6;
+            size: A5;
             margin: 0mm;
         }
     }
@@ -46,15 +46,15 @@
         background: white;
         width: 100%;
         color: #000;
-        max-width: 100mm;
-        height: 78mm;
+        max-width: 150mm;
+        height: 110mm;
         margin: 0 auto;
         padding: 5mm;
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         font-family: "Times New Roman", Times, serif;
         display: flex;
         flex-direction: column;
-        font-size: 9px;
+        font-size: 14px;
     }
 
     /* Header */
@@ -66,7 +66,7 @@
     }
 
     .institute-name {
-        font-size: 12px;
+        font-size: 18px;
         font-weight: bold;
         margin: 0 0px 0px 0;
         letter-spacing: 0.5px;
@@ -74,13 +74,13 @@
     }
 
     .hostel-name {
-        font-size: 10px;
+        font-size: 15px;
         margin: 2px 0 0 0;
         color: #333;
     }
 
     .prescription-title {
-        font-size: 10px;
+        font-size: 15px;
         font-weight: bold;
         margin-top: 3px;
     }
@@ -96,7 +96,7 @@
         grid-template-columns: 1fr 1fr;
         gap: 4px;
         margin-bottom: 4px;
-        font-size: 9px;
+        font-size: 15px;
     }
 
     .info-item {
@@ -119,7 +119,7 @@
         width: 100%;
         border-collapse: collapse;
         margin: 3px 0;
-        font-size: 7px;
+        font-size: 12px;
     }
 
     .medicines-table thead {
@@ -147,7 +147,7 @@
     /* Notes Section */
     .notes-section {
         margin: 2px 0;
-        font-size: 7px;
+        font-size: 14px;
     }
 
     .notes-label {
@@ -161,7 +161,7 @@
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 4px;
-        font-size: 10px;
+        font-size: 14px;
     }
 
     .signature-box {
@@ -176,13 +176,13 @@
 
     .signature-label {
         font-weight: bold;
-        font-size: 8px;
+        font-size: 12px;
     }
 
     /* Footer */
     .print-footer {
         text-align: center;
-        font-size: 6px;
+        font-size: 10px;
         color: #666;
         margin-top: 2px;
         padding-top: 2px;
@@ -290,7 +290,7 @@
         <!-- Medicines Table -->
         {% if prescription.items %}
         <table class="medicines-table">
-            <thead style="font-size: 10px;">
+            <thead>
                 <tr>
                     <th style="width: 25%;">Medicine Name</th>
                     <th style="width: 12%;">Dosage</th>
@@ -301,7 +301,7 @@
                     <!-- <th style="width: 11%;">Status</th> -->
                 </tr>
             </thead>
-            <tbody style="font-size: 9px;">
+            <tbody>
                 {% for item in prescription.items %}
                 <tr>
                     <td>
@@ -353,12 +353,12 @@
             <div class="signature-box">
                 <div class="signature-line"></div>
                 <div class="signature-label">Doctor</div>
-                <div style="font-size: 5px;">Date: _____</div>
+                <div style="font-size: 9px;">Date: _____</div>
             </div>
             <div class="signature-box">
                 <div class="signature-line"></div>
                 <div class="signature-label">Administrator</div>
-                <div style="font-size: 5px;">Date: _____</div>
+                <div style="font-size: 9px;">Date: _____</div>
             </div>
         </div>
 
