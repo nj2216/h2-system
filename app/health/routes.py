@@ -1,8 +1,9 @@
 """
 Health and drug management blueprint routes
 """
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import current_user, login_required
+from markupsafe import Markup
 from datetime import datetime
 from ..extensions import db
 from app.models import Student, DoctorVisit, Prescription, PrescriptionItem, Medicine, DummyMedicine, StockMovement, User, MedicineBatch, BatchDispensing
@@ -348,8 +349,13 @@ def create_prescription():
                     item_count += 1
                     new_medicines_created.append(f'{medicine_data.get("name")} ({medicine_data.get("dosage", "")})')
                     continue
-                except (json.JSONDecodeError, KeyError, ValueError) as e:
-                    flash(f'Error creating new medicine: {str(e)}', 'warning')
+                except json.JSONDecodeError:
+                    current_app.logger.error('JSON decode error in medicine creation', exc_info=True)
+                    flash('Invalid data format. Please check the medicine data.', 'warning')
+                    continue
+                except (KeyError, ValueError) as e:
+                    current_app.logger.error(f'Medicine creation validation error: {str(e)}', exc_info=True)
+                    flash('Missing required field or invalid value. Please check all medicine details.', 'warning')
                     continue
             
             # Handle existing medicines

@@ -494,10 +494,11 @@ class EquipmentIssue(db.Model):
             self.status = 'Overdue'
             
             days_over = (datetime.utcnow() - self.expected_return_date).days
-            self.days_overdue = max(1, days_over)  # At least 1 day
+            self.days_overdue = max(0, days_over)  # 0 or more days
             
             equipment = MedicalEquipment.query.get(self.equipment_id)
-            self.penalty_amount = self.days_overdue * equipment.daily_penalty * self.quantity
+            if self.days_overdue > 0:  # Only charge penalty if actually overdue
+                self.penalty_amount = self.days_overdue * equipment.daily_penalty * self.quantity
             
             db.session.commit()
     
@@ -526,11 +527,15 @@ class EquipmentIssue(db.Model):
             self.status = 'Returned'
             self.penalty_amount = equipment.unit_cost * self.quantity  # Full replacement cost
         
-        # Calculate overdue penalty
+        # Calculate overdue penalty (only if actually late)
         if self.actual_return_date > self.expected_return_date:
             days_over = (self.actual_return_date - self.expected_return_date).days
-            days_over = max(1, days_over)
-            self.penalty_amount += days_over * equipment.daily_penalty * self.quantity
+            days_over = max(0, days_over)  # 0 or more days
+            if days_over > 0:
+                self.penalty_amount += days_over * equipment.daily_penalty * self.quantity
+            self.days_overdue = days_over
+        else:
+            self.days_overdue = 0
         
         self.is_overdue = False
         db.session.commit()

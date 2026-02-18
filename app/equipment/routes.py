@@ -2,8 +2,9 @@
 Equipment Management Routes
 """
 from datetime import datetime, timedelta
-from flask import render_template, request, flash, redirect, url_for, jsonify
+from flask import render_template, request, flash, redirect, url_for, jsonify, current_app
 from flask_login import login_required, current_user
+from markupsafe import Markup
 from sqlalchemy import and_, or_
 from app.extensions import db
 from app.models import MedicalEquipment, EquipmentIssue, Student, User
@@ -93,7 +94,8 @@ def issue_equipment():
             
         except Exception as e:
             db.session.rollback()
-            flash(f'Error issuing equipment: {str(e)}', 'danger')
+            current_app.logger.error(f'Equipment issue error: {str(e)}', exc_info=True)
+            flash('Failed to issue equipment. Please try again or contact support.', 'danger')
     
     # Get students and equipment for dropdown
     students = Student.query.all()
@@ -177,22 +179,49 @@ def return_equipment(issue_id):
                 flash('Please select equipment condition.', 'danger')
                 return redirect(url_for('equipment.return_equipment', issue_id=issue_id))
             
+            # Store penalty details before processing for alert message
+            equipment = issue.equipment
+            penalty_details = []
+            
+            # Check overdue penalty
+            if issue.actual_return_date is None:
+                current_time = datetime.utcnow()
+                if current_time > issue.expected_return_date:
+                    days_over = max(0, (current_time - issue.expected_return_date).days)
+                    if days_over > 0:
+                        overdue_penalty = days_over * equipment.daily_penalty * issue.quantity
+                        penalty_details.append(f"Overdue ({days_over} days × ₹{equipment.daily_penalty} × {issue.quantity}): ₹{overdue_penalty:.2f}")
+            
+            # Check condition penalty
+            if condition == 'damaged':
+                damage_penalty = equipment.unit_cost * issue.quantity * 0.5
+                penalty_details.append(f"Damage (50% of ₹{equipment.unit_cost} × {issue.quantity}): ₹{damage_penalty:.2f}")
+            elif condition == 'lost':
+                loss_penalty = equipment.unit_cost * issue.quantity
+                penalty_details.append(f"Replacement cost (100% of ₹{equipment.unit_cost} × {issue.quantity}): ₹{loss_penalty:.2f}")
+            
             # Process return
             issue.process_return(condition, notes)
             issue.verified_by_id = current_user.id
             
             db.session.commit()
             
-            penalty_msg = ''
+            # Create detailed alert message
             if issue.penalty_amount > 0:
-                penalty_msg = f' Penalty charged: ₹{issue.penalty_amount:.2f}'
+                alert_msg = f'Equipment return processed. <strong>Penalty: ₹{issue.penalty_amount:.2f}</strong><ul class="mb-0 mt-2">'
+                for detail in penalty_details:
+                    alert_msg += f'<li>{detail}</li>'
+                alert_msg += '</ul>'
+                flash(Markup(alert_msg), 'warning')
+            else:
+                flash('Equipment return processed successfully. No penalty.', 'success')
             
-            flash(f'Equipment return processed successfully.{penalty_msg}', 'success')
             return redirect(url_for('equipment.issue_list'))
             
         except Exception as e:
             db.session.rollback()
-            flash(f'Error processing return: {str(e)}', 'danger')
+            current_app.logger.error(f'Equipment return error: {str(e)}', exc_info=True)
+            flash('Failed to process equipment return. Please try again or contact support.', 'danger')
     
     return render_template('equipment/return.html', issue=issue)
 
@@ -259,7 +288,8 @@ def manage_equipment():
             
         except Exception as e:
             db.session.rollback()
-            flash(f'Error managing equipment: {str(e)}', 'danger')
+            current_app.logger.error(f'Equipment management error: {str(e)}', exc_info=True)
+            flash('Operation failed. Please try again or contact support.', 'danger')
     
     page = request.args.get('page', 1, type=int)
     equipments = MedicalEquipment.query.paginate(page=page, per_page=20)
@@ -306,7 +336,8 @@ def mark_penalty_paid(issue_id):
         flash('Penalty marked as paid.', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error: {str(e)}', 'danger')
+        current_app.logger.error(f'Penalty payment error: {str(e)}', exc_info=True)
+        flash('Failed to process penalty payment. Please try again or contact support.', 'danger')
     
     return redirect(url_for('equipment.penalty_report'))
 
@@ -324,6 +355,21 @@ def student_dashboard():
         )
     ).all()
     
+    # Separate overdue and due soon from regular issued
+    overdue = []
+    due_soon = []
+    regular = []
+    
+    for issue in issued:
+        days_until_due = (issue.expected_return_date - datetime.utcnow()).days
+        
+        if days_until_due < 0:  # Overdue
+            overdue.append(issue)
+        elif days_until_due <= 2 and days_until_due >= 0:  # Due within 2 days
+            due_soon.append(issue)
+        else:  # More than 2 days left
+            regular.append(issue)
+    
     returned = EquipmentIssue.query.filter(
         and_(
             EquipmentIssue.student_id == student.id,
@@ -338,7 +384,14 @@ def student_dashboard():
         )
     ).scalar() or 0.0
     
-    return render_template('equipment/student_dashboard.html', issued=issued, returned=returned, total_penalty=total_penalty)
+    return render_template('equipment/student_dashboard.html', 
+                          overdue=overdue, 
+                          due_soon=due_soon, 
+                          regular=regular,
+                          issued=issued,
+                          returned=returned, 
+                          total_penalty=total_penalty,
+                          now=datetime.utcnow())
 
 
 @equipment_bp.route('/bulk-upload', methods=['GET', 'POST'])
@@ -464,12 +517,13 @@ def bulk_upload_equipment():
                 error_msg = '<br>'.join(errors[:10])  # Show first 10 errors
                 if len(errors) > 10:
                     error_msg += f'<br>... and {len(errors) - 10} more errors'
-                flash(f'Encountered {len(errors)} error(s):<br>{error_msg}', 'warning')
+                flash(Markup(f'Encountered {len(errors)} error(s):<br>{error_msg}'), 'warning')
             
             return redirect(url_for('equipment.manage_equipment'))
         
         except Exception as e:
-            flash(f'Error processing file: {str(e)}', 'danger')
+            current_app.logger.error(f'Equipment bulk upload error: {str(e)}', exc_info=True)
+            flash('Failed to process file. Please check your file format and try again.', 'danger')
             return redirect(url_for('equipment.bulk_upload_equipment'))
     
     return render_template('equipment/bulk_upload.html')

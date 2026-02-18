@@ -37,8 +37,8 @@
         }
 
         .print-footer {
-            margin-top: 0 !important;
-            padding-top: 0 !important;
+            margin-top: 20px !important;
+            padding-top: 10px !important;
             padding-bottom: 0 !important;
             margin-bottom: 0 !important;
         }
@@ -126,7 +126,7 @@
         width: 100%;
         border-collapse: collapse;
         margin: 3px 0;
-        font-size: 12px;
+        font-size: 14px;
     }
 
     .medicines-table thead {
@@ -320,7 +320,7 @@
                     <td>{{ item.dosage }}</td>
                     <td>{{ item.frequency }}</td>
                     <td>{{ item.duration_days }} days</td>
-                    <td>{{ item.quantity_prescribed }} {{ item.get_medicine().unit }}</td>
+                    <td style="font-size: 12px;">{{ item.quantity_prescribed }} {{ item.get_medicine().unit }}</td>
                     <td>{{ item.instructions or '-' }}</td>
                     <!-- <td style="text-align: center; font-weight: bold;">{{ item.status }}</td> -->
                 </tr>

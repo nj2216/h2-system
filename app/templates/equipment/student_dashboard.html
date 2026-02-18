@@ -12,18 +12,34 @@
         <div class="col-md-4 col-sm-6 col-12">
             <div class="card border-left-primary">
                 <div class="card-body">
-                    <h6 class="card-title text-primary">Active Issues</h6>
+                    <h6 class="card-title text-primary">Total Active</h6>
                     <h3>{{ issued|length }}</h3>
                 </div>
             </div>
         </div>
         <div class="col-md-4 col-sm-6 col-12">
+            {% if overdue|length > 0 %}
+            <div class="card border-left-danger">
+                <div class="card-body">
+                    <h6 class="card-title text-danger">⚠️ Overdue Items</h6>
+                    <h3>{{ overdue|length }}</h3>
+                </div>
+            </div>
+            {% elif due_soon|length > 0 %}
+            <div class="card border-left-warning">
+                <div class="card-body">
+                    <h6 class="card-title text-warning">⏰ Due Soon</h6>
+                    <h3>{{ due_soon|length }}</h3>
+                </div>
+            </div>
+            {% else %}
             <div class="card border-left-success">
                 <div class="card-body">
                     <h6 class="card-title text-success">Returned</h6>
                     <h3>{{ returned|length }}</h3>
                 </div>
             </div>
+            {% endif %}
         </div>
         <div class="col-md-4 col-sm-6 col-12">
             <div class="card border-left-danger">
@@ -35,9 +51,80 @@
         </div>
     </div>
 
+    <!-- OVERDUE ITEMS - HIGHEST PRIORITY -->
+    {% if overdue %}
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <strong>URGENT: {{ overdue|length }} Overdue Item(s)</strong>
+        <p class="mb-0 mt-2">Please return these items immediately to avoid additional penalties.</p>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <h4 class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Overdue Items</h4>
+    <div class="table-responsive">
+        <table class="table table-hover table-danger">
+            <thead class="table-danger">
+                <tr>
+                    <th data-label="Equipment" class="d-none d-sm-table-cell">Equipment</th>
+                    <th data-label="Qty" class="d-none d-sm-table-cell">Qty</th>
+                    <th data-label="Expected Return">Expected Return</th>
+                    <th data-label="Days Overdue">Days Overdue</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for issue in overdue %}
+                <tr class="table-danger">
+                    <td data-label="Equipment" class="d-none d-sm-table-cell"><strong>{{ issue.equipment.name }}</strong></td>
+                    <td data-label="Qty" class="d-none d-sm-table-cell">{{ issue.quantity }}</td>
+                    <td data-label="Expected Return">{{ issue.expected_return_date.strftime('%Y-%m-%d') }}</td>
+                    <td data-label="Days Overdue"><span class="badge bg-danger">{{ issue.days_overdue }} days late</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- DUE SOON ITEMS -->
+    {% if due_soon %}
+    <div class="alert alert-warning alert-dismissible fade show mt-4" role="alert">
+        <i class="bi bi-clock-history"></i>
+        <strong>⏰ {{ due_soon|length }} Item(s) Due Soon</strong>
+        <p class="mb-0 mt-2">Please return these items within the next 2 days.</p>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <h4 class="text-warning"><i class="bi bi-clock-history"></i> Due Soon (Within 2 Days)</h4>
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th data-label="Equipment" class="d-none d-sm-table-cell">Equipment</th>
+                    <th data-label="Qty" class="d-none d-sm-table-cell">Qty</th>
+                    <th data-label="Issued" class="d-none d-md-table-cell">Issued Date</th>
+                    <th data-label="Expected Return">Expected Return</th>
+                    <th data-label="Days Left">Days Left</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for issue in due_soon %}
+                <tr style="background-color: rgba(255, 193, 7, 0.1);">
+                    <td data-label="Equipment" class="d-none d-sm-table-cell"><strong>{{ issue.equipment.name }}</strong></td>
+                    <td data-label="Qty" class="d-none d-sm-table-cell">{{ issue.quantity }}</td>
+                    <td data-label="Issued" class="d-none d-md-table-cell">{{ issue.issued_date.strftime('%Y-%m-%d') }}</td>
+                    <td data-label="Expected Return">{{ issue.expected_return_date.strftime('%Y-%m-%d') }}</td>
+                    <td data-label="Days Left"><span class="badge bg-warning">{{ (issue.expected_return_date - now).days }} days</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <!-- REGULAR ISSUED ITEMS -->
     <!-- Active Issues -->
-    <h4 class="mt-4"><i class="bi bi-exclamation-circle"></i> Currently Issued</h4>
-    {% if issued %}
+    <h4 class="mt-4"><i class="bi bi-box-seam"></i> Currently Issued</h4>
+    {% if regular %}
     <div class="table-responsive">
         <table class="table table-hover">
             <thead>
@@ -46,29 +133,23 @@
                     <th data-label="Qty" class="d-none d-sm-table-cell">Qty</th>
                     <th data-label="Issued" class="d-none d-md-table-cell">Issued Date</th>
                     <th data-label="Expected Return" class="d-none d-lg-table-cell">Expected Return</th>
-                    <th data-label="Status">Status</th>
+                    <th data-label="Days Left">Days Left</th>
                 </tr>
             </thead>
             <tbody>
-                {% for issue in issued %}
+                {% for issue in regular %}
                 <tr>
                     <td data-label="Equipment" class="d-none d-sm-table-cell"><strong>{{ issue.equipment.name }}</strong></td>
                     <td data-label="Qty" class="d-none d-sm-table-cell">{{ issue.quantity }}</td>
                     <td data-label="Issued" class="d-none d-md-table-cell">{{ issue.issued_date.strftime('%Y-%m-%d') }}</td>
                     <td data-label="Expected Return" class="d-none d-lg-table-cell">{{ issue.expected_return_date.strftime('%Y-%m-%d') }}</td>
-                    <td data-label="Status">
-                        {% if issue.is_overdue %}
-                            <span class="badge bg-danger">Overdue - {{ issue.days_overdue }} days</span>
-                        {% else %}
-                            <span class="badge bg-info">Issued</span>
-                        {% endif %}
-                    </td>
+                    <td data-label="Days Left"><span class="badge bg-success">{{ (issue.expected_return_date - now).days }} days</span></td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    {% else %}
+    {% elif not overdue and not due_soon %}
     <div class="alert alert-info" role="alert">
         <i class="bi bi-info-circle"></i> No active equipment issues
     </div>
@@ -90,26 +171,30 @@
                 </tr>
             </thead>
             <tbody>
-                {% for issue in returned %}
-                <tr>
-                    <td data-label="Equipment" class="d-none d-sm-table-cell"><strong>{{ issue.equipment.name }}</strong></td>
-                    <td data-label="Qty" class="d-none d-sm-table-cell">{{ issue.quantity }}</td>
-                    <td data-label="Issued" class="d-none d-md-table-cell">{{ issue.issued_date.strftime('%Y-%m-%d') }}</td>
-                    <td data-label="Returned" class="d-none d-lg-table-cell">{{ issue.actual_return_date.strftime('%Y-%m-%d') }}</td>
+                {% for item in returned %}
+                <tr {% if item.issue.penalty_amount > 0 %}style="background-color: rgba(255, 193, 7, 0.1);"{% endif %}>
+                    <td data-label="Equipment" class="d-none d-sm-table-cell"><strong>{{ item.issue.equipment.name }}</strong></td>
+                    <td data-label="Qty" class="d-none d-sm-table-cell">{{ item.issue.quantity }}</td>
+                    <td data-label="Issued" class="d-none d-md-table-cell">{{ item.issue.issued_date.strftime('%Y-%m-%d') }}</td>
+                    <td data-label="Returned" class="d-none d-lg-table-cell">{{ item.issue.actual_return_date.strftime('%Y-%m-%d') }}</td>
                     <td data-label="Condition">
-                        {% if issue.return_condition == 'normal' %}
+                        {% if item.issue.return_condition == 'normal' %}
                             <span class="badge bg-success">Normal</span>
-                        {% elif issue.return_condition == 'damaged' %}
+                        {% elif item.issue.return_condition == 'damaged' %}
                             <span class="badge bg-warning">Damaged</span>
-                        {% elif issue.return_condition == 'lost' %}
+                        {% elif item.issue.return_condition == 'lost' %}
                             <span class="badge bg-danger">Lost</span>
                         {% endif %}
                     </td>
                     <td data-label="Penalty">
-                        {% if issue.penalty_amount > 0 %}
-                            <span class="badge bg-warning">₹{{ "%.2f"|format(issue.penalty_amount) }}</span>
-                            {% if issue.penalty_paid %}
+                        {% if item.issue.penalty_amount > 0 %}
+                            <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#penaltyModal{{ item.issue.id }}" title="Click to see breakdown">
+                                <i class="bi bi-info-circle"></i> ₹{{ "%.2f"|format(item.issue.penalty_amount) }}
+                            </button>
+                            {% if item.issue.penalty_paid %}
                                 <br><small class="text-success">✓ Paid</small>
+                            {% else %}
+                                <br><small class="text-danger">Unpaid</small>
                             {% endif %}
                         {% else %}
                             <span class="text-muted">-</span>
@@ -120,6 +205,75 @@
             </tbody>
         </table>
     </div>
+
+    <!-- Penalty Breakdown Modals -->
+    {% for item in returned %}
+        {% if item.issue.penalty_amount > 0 %}
+        <div class="modal fade" id="penaltyModal{{ item.issue.id }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning">
+                        <h5 class="modal-title text-dark">Penalty Breakdown</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <small class="text-muted">Equipment</small>
+                            <p class="mb-0"><strong>{{ item.issue.equipment.name }}</strong></p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <small class="text-muted">Why This Penalty?</small>
+                            <div>
+                                {% for reason in item.reasons %}
+                                    <span class="badge bg-warning text-dark me-1">{{ reason }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6 class="card-title">Penalty Calculation</h6>
+                                <ul class="list-unstyled mb-0">
+                                    {% for component in item.components %}
+                                        <li class="mb-2">
+                                            <strong>{{ component.label }}</strong>
+                                            <br>
+                                            <small class="text-muted">{{ component.calc }}</small>
+                                            <br>
+                                            <span class="text-warning h6">= ₹{{ "%.2f"|format(component.amount) }}</span>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                                <hr>
+                                <div class="text-end">
+                                    <strong class="h5">Total Penalty: ₹{{ "%.2f"|format(item.issue.penalty_amount) }}</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        {% if item.issue.return_notes %}
+                        <div class="mt-3">
+                            <small class="text-muted">Notes from H2 Staff</small>
+                            <p class="mb-0">{{ item.issue.return_notes }}</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        {% if not item.issue.penalty_paid %}
+                        <button type="button" class="btn btn-warning">
+                            <i class="bi bi-cash-coin"></i> Pay Penalty
+                        </button>
+                        {% else %}
+                        <span class="badge bg-success">Paid on {{ item.issue.penalty_paid_date.strftime('%Y-%m-%d') }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    {% endfor %}
     {% else %}
     <div class="alert alert-info" role="alert">
         <i class="bi bi-info-circle"></i> No returned equipment yet

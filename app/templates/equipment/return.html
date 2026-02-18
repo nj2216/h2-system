@@ -36,7 +36,10 @@
                             <p><strong>Issued Date:</strong><br>{{ issue.issued_date.strftime('%Y-%m-%d %H:%M') }}</p>
                             <p><strong>Expected Return:</strong><br>{{ issue.expected_return_date.strftime('%Y-%m-%d') }}</p>
                             {% if issue.is_overdue %}
-                            <p><strong>Days Overdue:</strong><br><span class="badge bg-danger">{{ issue.days_overdue }} days</span></p>
+                            <div class="alert alert-danger mb-0" role="alert">
+                                <i class="bi bi-exclamation-triangle-fill"></i> <strong>Overdue: {{ issue.days_overdue }} days</strong>
+                                <br><small>Penalty will be calculated based on delay and condition.</small>
+                            </div>
                             {% endif %}
                         </div>
                     </div>

@@ -1,8 +1,9 @@
 """
 Student management blueprint routes
 """
-from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify, current_app
 from flask_login import current_user, login_required
+from markupsafe import Markup
 from datetime import datetime
 from ..extensions import db
 from app.models import Student, User
@@ -308,12 +309,13 @@ def bulk_upload_students():
                 error_msg = '<br>'.join(errors[:10])  # Show first 10 errors
                 if len(errors) > 10:
                     error_msg += f'<br>... and {len(errors) - 10} more errors'
-                flash(f'Encountered {len(errors)} error(s):<br>{error_msg}', 'warning')
+                flash(Markup(f'Encountered {len(errors)} error(s):<br>{error_msg}'), 'warning')
             
             return redirect(url_for('students.students_list'))
         
         except Exception as e:
-            flash(f'Error processing file: {str(e)}', 'danger')
+            current_app.logger.error(f'Student bulk upload error: {str(e)}', exc_info=True)
+            flash('Failed to process file. Please check your file format and try again.', 'danger')
             return redirect(url_for('students.bulk_upload_students'))
     
     return render_template('students/bulk_upload.html')

@@ -64,10 +64,10 @@
                             <span class="badge bg-warning">Damaged</span>
                         {% elif issue.return_condition == 'lost' %}
                             <span class="badge bg-danger">Lost</span>
-                        {% elif issue.is_overdue and not issue.actual_return_date %}
-                            <span class="badge bg-danger">Overdue</span>
+                        {% elif issue.days_overdue > 0 %}
+                            <span class="badge bg-info">Overdue</span>
                         {% else %}
-                            <span class="badge bg-secondary">Other</span>
+                            <span class="badge bg-success">Normal</span>
                         {% endif %}
                     </td>
                     <td data-label="Days Overdue" class="d-none d-lg-table-cell">
@@ -133,10 +133,10 @@
                                                 <span class="badge bg-warning">Damaged</span>
                                             {% elif issue.return_condition == 'lost' %}
                                                 <span class="badge bg-danger">Lost</span>
-                                            {% elif issue.is_overdue and not issue.actual_return_date %}
-                                                <span class="badge bg-danger">Overdue</span>
+                                            {% elif issue.days_overdue > 0 %}
+                                                <span class="badge bg-info">Overdue</span>
                                             {% else %}
-                                                <span class="badge bg-secondary">Other</span>
+                                                <span class="badge bg-success">Normal</span>
                                             {% endif %}
                                         </p>
                                     </div>
