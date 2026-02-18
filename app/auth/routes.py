@@ -122,6 +122,26 @@ def edit_user(user_id):
         user.role = request.form.get('role')
         user.is_active = request.form.get('is_active') == 'on'
         
+        # Handle password change
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+        
+        if new_password or confirm_password:
+            if not new_password or not confirm_password:
+                flash('Please enter both password fields or leave them empty.', 'danger')
+                return render_template('auth/edit_user.html', user=user)
+            
+            if new_password != confirm_password:
+                flash('Passwords do not match.', 'danger')
+                return render_template('auth/edit_user.html', user=user)
+            
+            if len(new_password) < 6:
+                flash('Password must be at least 6 characters long.', 'danger')
+                return render_template('auth/edit_user.html', user=user)
+            
+            user.set_password(new_password)
+            flash('Password changed successfully.', 'success')
+        
         db.session.commit()
         flash('User updated successfully.', 'success')
         return redirect(url_for('auth.users_list'))

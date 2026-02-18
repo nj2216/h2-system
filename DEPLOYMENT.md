@@ -4,13 +4,10 @@
 
 ### Pre-Deployment
 
-- [ ] Update SECRET_KEY in config.py
-- [ ] Set FLASK_ENV=production
-- [ ] Disable debug mode (DEBUG=False)
+- [ ] Set up PostgreSQL database (production)
+- [ ] Update DATABASE_URL for PostgreSQL
 - [ ] Change default admin password
-- [ ] Review all security settings
-- [ ] Test all features in development
-- [ ] Backup production data
+- [ ] Create initial database backup
 
 ---
 
@@ -28,13 +25,17 @@ source venv/bin/activate  # Linux/macOS
 # or
 venv\Scripts\activate  # Windows
 
-# Install dependencies
+# Install dependencies (includes psycopg2 for PostgreSQL)
 pip install -r requirements.txt
 
-# Create .env file
+# Create .env file from example
 cp .env.example .env
 
-# Initialize database
+# For development: SQLite (default)
+# For production: Update DATABASE_URL in .env to PostgreSQL connection string
+# DATABASE_URL=postgresql://h2user:password@localhost:5432/h2system
+
+# Initialize database and create tables
 python run.py
 ```
 
@@ -52,67 +53,6 @@ python cli.py seed_db
 ---
 
 ## Production Deployment
-
-### Using Gunicorn (Recommended)
-
-#### 1. Install Gunicorn
-```bash
-pip install gunicorn
-```
-
-#### 2. Run with Gunicorn
-```bash
-# Basic
-gunicorn -w 4 -b 0.0.0.0:5000 run:app
-
-# With logging
-gunicorn -w 4 -b 0.0.0.0:5000 \
-  --access-logfile /var/log/h2system/access.log \
-  --error-logfile /var/log/h2system/error.log \
-  run:app
-
-# Daemonized
-gunicorn -w 4 -b 0.0.0.0:5000 \
-  --daemon \
-  --pid /var/run/h2system.pid \
-  run:app
-```
-
-### Using Docker
-
-#### Dockerfile
-```dockerfile
-FROM python:3.9-slim
-
-WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install gunicorn
-
-COPY . .
-
-ENV FLASK_ENV=production
-ENV FLASK_DEBUG=False
-
-EXPOSE 5000
-
-CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "run:app"]
-```
-
-#### Build and Run
-```bash
-# Build image
-docker build -t h2system:latest .
-
-# Run container
-docker run -d \
-  -p 5000:5000 \
-  -v h2system_db:/app/instance \
-  -e FLASK_ENV=production \
-  --name h2system \
-  h2system:latest
-```
 
 ### Using Systemd (Linux)
 
@@ -155,143 +95,49 @@ sudo systemctl status h2system
 
 ---
 
-## Nginx Configuration
-
-### Reverse Proxy Setup
-
-```nginx
-upstream h2_app {
-    server 127.0.0.1:5000;
-}
-
-server {
-    listen 80;
-    server_name h2system.yourdomain.com;
-
-    # Redirect HTTP to HTTPS
-    return 301 https://$server_name$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name h2system.yourdomain.com;
-
-    # SSL certificates
-    ssl_certificate /etc/letsencrypt/live/h2system.yourdomain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/h2system.yourdomain.com/privkey.pem;
-
-    # SSL settings
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-    ssl_prefer_server_ciphers on;
-
-    client_max_body_size 20M;
-
-    location / {
-        proxy_pass http://h2_app;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_redirect off;
-        proxy_buffering off;
-        proxy_request_buffering off;
-    }
-
-    location /static/ {
-        alias /home/h2user/h2sqrr/app/static/;
-        expires 30d;
-        add_header Cache-Control "public, immutable";
-    }
-
-    # Security headers
-    add_header X-Frame-Options "SAMEORIGIN" always;
-    add_header X-Content-Type-Options "nosniff" always;
-    add_header X-XSS-Protection "1; mode=block" always;
-    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
-}
-```
-
----
-
 ## Database Setup
 
-### SQLite (Development/Small Deployments)
+### PostgreSQL
+
+#### 1. Install PostgreSQL
+**Linux (Ubuntu/Debian):**
 ```bash
-# Already configured
-# Database file: h2_system.db
+sudo apt-get update
+sudo apt-get install postgresql postgresql-contrib
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
 ```
 
-### PostgreSQL (Production)
+#### 2. Create Database and User
+```bash
+# Connect to PostgreSQL
+sudo -u postgres psql
 
-#### 1. Install Dependencies
+# Inside psql:
+CREATE DATABASE h2system;
+CREATE USER h2user WITH PASSWORD 'secure_password_here';
+ALTER ROLE h2user SET client_encoding TO 'utf8';
+ALTER ROLE h2user SET default_transaction_isolation TO 'read committed';
+ALTER ROLE h2user SET default_transaction_deferrable TO on;
+ALTER ROLE h2user SET timezone TO 'UTC';
+GRANT ALL PRIVILEGES ON DATABASE h2system TO h2user;
+\q
+```
+
+#### 3. Install Python Dependencies
 ```bash
 pip install psycopg2-binary
 ```
 
-#### 2. Update config.py
-```python
-import os
-DATABASE_URL = os.environ.get('DATABASE_URL') or \
-    'postgresql://user:password@localhost/h2system'
-```
-
-#### 3. Set Environment Variable
+#### 4. Update .env File
 ```bash
-export DATABASE_URL="postgresql://h2user:password@localhost/h2system"
+# Database Configuration
+DATABASE_URL=postgresql://h2user:secure_password_here@localhost:5432/h2system
 ```
-
-#### 4. Create Database
+#### 5. Verify Connection
 ```bash
-sudo -u postgres createdb h2system
-sudo -u postgres createuser h2user
-```
-
----
-
-## Security Hardening
-
-### 1. Environment Variables
-```bash
-# Update .env with production values
-FLASK_ENV=production
-FLASK_DEBUG=False
-SECRET_KEY=<generate-new-secret-key>
-DATABASE_URL=<production-db-url>
-```
-
-### 2. Generate Secure Secret Key
-```bash
-python -c "import secrets; print(secrets.token_hex(32))"
-```
-
-### 3. File Permissions
-```bash
-# Set appropriate permissions
-chmod 640 .env
-chmod 755 h2sqrr/
-chmod 644 h2sqrr/*.py
-chmod 755 h2sqrr/app/
-```
-
-### 4. Update Admin Password
-```python
-# After deployment, login and change admin password
-# Users → Edit User (for admin)
-```
-
-### 5. Enable HTTPS
-- Use Let's Encrypt for free SSL certificates
-- Configure with Nginx/Apache
-- Force HTTPS redirect
-
-### 6. Firewall Configuration
-```bash
-# Open necessary ports
-sudo ufw allow 22/tcp     # SSH
-sudo ufw allow 80/tcp     # HTTP
-sudo ufw allow 443/tcp    # HTTPS
-sudo ufw deny 5000/tcp    # Block Flask port
+# Test connection
+python -c "import psycopg2; conn = psycopg2.connect('postgresql://h2user:secure_password_here@localhost/h2system'); print('Connection successful'); conn.close()"
 ```
 
 ---
@@ -300,24 +146,53 @@ sudo ufw deny 5000/tcp    # Block Flask port
 
 ### Database Backups
 
-#### SQLite
+#### PostgreSQL
+
+**Full Database Backup:**
 ```bash
-# Automated backup script
-#!/bin/bash
-BACKUP_DIR="/backups/h2system"
-DATE=$(date +%Y%m%d_%H%M%S)
-cp /home/h2user/h2sqrr/h2_system.db $BACKUP_DIR/h2_system_$DATE.db
-# Keep last 30 days
-find $BACKUP_DIR -mtime +30 -delete
+# Plain SQL format (text)
+pg_dump -U h2user -h localhost h2system > h2system_$(date +%Y%m%d_%H%M%S).sql
+
+# Custom format (compressed, better for large databases)
+pg_dump -U h2user -h localhost -F c h2system > h2system_$(date +%Y%m%d_%H%M%S).dump
 ```
 
-#### PostgreSQL
+**Restore from Backup:**
 ```bash
-# Backup command
-pg_dump h2system > h2system_$(date +%Y%m%d).sql
+# From SQL file
+psql -U h2user -h localhost -d h2system < h2system_20260128.sql
 
-# Restore command
-psql h2system < h2system_20260128.sql
+# From dump file (compressed format)
+pg_restore -U h2user -h localhost -d h2system h2system_20260128.dump
+```
+
+**Automated Backup Script:**
+```bash
+#!/bin/bash
+BACKUP_DIR="/backups/h2system"
+DB_USER="h2user"
+DB_HOST="localhost"
+DB_NAME="h2system"
+DATE=$(date +%Y%m%d_%H%M%S)
+
+mkdir -p $BACKUP_DIR
+
+# Create backup
+pg_dump -U $DB_USER -h $DB_HOST -F c $DB_NAME > $BACKUP_DIR/h2system_$DATE.dump
+
+# Compress backup
+gzip $BACKUP_DIR/h2system_$DATE.dump
+
+# Keep backups for 30 days
+find $BACKUP_DIR -name "h2system_*.dump.gz" -mtime +30 -delete
+
+echo "Backup completed: $BACKUP_DIR/h2system_$DATE.dump.gz"
+```
+
+#### SQLite (Development Only)
+```bash
+# Simple file copy (development only)
+cp /path/to/h2_system.db /backups/h2_system_$(date +%Y%m%d).db
 ```
 
 #### Cron Job (Daily Backup)
@@ -339,34 +214,6 @@ iostat -x 1 5
 
 ---
 
-## Performance Optimization
-
-### 1. Database Optimization
-- Create indexes on frequently queried columns
-- Use query profiling to identify slow queries
-- Archive old data periodically
-
-### 2. Caching
-- Implement Redis for session caching
-- Cache frequently accessed data
-- Use browser caching for static files
-
-### 3. Load Balancing
-```nginx
-upstream h2_backend {
-    server 127.0.0.1:5001;
-    server 127.0.0.1:5002;
-    server 127.0.0.1:5003;
-}
-```
-
-### 4. Static Files
-- Serve static files from CDN
-- Use gzip compression
-- Minify CSS/JavaScript
-
----
-
 ## Troubleshooting
 
 ### Application won't start
@@ -381,100 +228,41 @@ pip install -r requirements.txt --upgrade
 journalctl -u h2system -n 50
 ```
 
-### Database connection error
+### PostgreSQL connection errors
 ```bash
-# Test connection
-python -c "from app import create_app, db; app = create_app(); app.app_context().push(); db.session.execute('SELECT 1')"
+# Check if PostgreSQL is running
+sudo systemctl status postgresql
 
-# Check database permissions
-ls -la h2_system.db
+# Check PostgreSQL is listening on port 5432
+sudo ss -tlnp | grep 5432
+
+# Test psql connection
+psql -U h2user -h localhost -d h2system -c "SELECT 1;"
+
+# View PostgreSQL logs
+sudo tail -f /var/log/postgresql/postgresql.log
+
+# Check pg_hba.conf for authentication method
+sudo cat /etc/postgresql/13/main/pg_hba.conf
+
+# Restart PostgreSQL if needed
+sudo systemctl restart postgresql
 ```
 
-### High CPU usage
-- Increase worker processes
-- Implement caching
-- Optimize database queries
-- Monitor slow endpoints
-
-### Out of memory
-- Reduce worker processes
-- Enable database connection pooling
-- Implement memory profiling
-- Archive old data
-
----
-
-## Monitoring & Alerts
-
-### Application Monitoring
+### Database is locked or slow
 ```bash
-# Install monitoring tools
-pip install prometheus-client
+# Check active connections in PostgreSQL
+psql -U h2user -d h2system -c "SELECT pid, usename, application_name, state FROM pg_stat_activity;"
 
-# Add to application for metrics
-# CPU, memory, request count, response time
+# Find long-running queries
+psql -U h2user -d h2system -c "SELECT pid, now() - pg_stat_activity.query_start AS duration, query FROM pg_stat_activity WHERE (now() - pg_stat_activity.query_start) > interval '5 minutes';"
+
+# Kill idle connections
+psql -U h2user -d h2system -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE state = 'idle';"
+
+# Analyze and vacuum database
+psql -U h2user -d h2system -c "VACUUM ANALYZE;"
 ```
-
-### Health Check Endpoint
-```python
-@app.route('/health')
-def health():
-    return {'status': 'healthy'}, 200
-```
-
-### Email Alerts
-- Configure error notifications
-- Monitor disk space
-- Track failed logins
-
----
-
-## Upgrade & Rollback
-
-### Backup Before Upgrade
-```bash
-# Backup database and code
-cp -r h2sqrr h2sqrr_backup_$(date +%Y%m%d)
-pg_dump h2system > h2system_$(date +%Y%m%d).sql
-```
-
-### Update Application
-```bash
-# Pull new code
-git pull origin main
-
-# Update dependencies
-pip install -r requirements.txt --upgrade
-
-# Run migrations (if any)
-python run.py
-
-# Restart service
-sudo systemctl restart h2system
-```
-
-### Rollback If Issues
-```bash
-# Restore from backup
-rm -rf h2sqrr
-cp -r h2sqrr_backup_20260128 h2sqrr
-
-# Restart service
-sudo systemctl restart h2system
-```
-
----
-
-## Maintenance Schedule
-
-| Task | Frequency |
-|------|-----------|
-| Database backup | Daily |
-| Log rotation | Weekly |
-| Security updates | As needed |
-| Dependency updates | Monthly |
-| Full backup | Weekly |
-| Performance audit | Monthly |
 
 ---
 
@@ -482,10 +270,25 @@ sudo systemctl restart h2system
 
 - **Documentation**: See README.md
 - **Quick Start**: See QUICKSTART.md
-- **Issues**: Check error logs
+- **Issues**: Check error logs or application logs
 - **Database**: See models.py for schema
+
+### PostgreSQL Resources
+- [PostgreSQL Official Documentation](https://www.postgresql.org/docs/)
+- [PostgreSQL Performance Tuning](https://wiki.postgresql.org/wiki/Performance_Optimization)
+- [pgBouncer - Connection Pooling](https://www.pgbouncer.org/)
+- [pgAdmin - Web Interface](https://www.pgadmin.org/)
+- [pg_dump Documentation](https://www.postgresql.org/docs/current/app-pgdump.html)
+
+### Useful Tools
+- **pgAdmin**: Web interface for PostgreSQL management
+- **DBeaver**: Universal database tool with PostgreSQL support
+- **pgBouncer**: Connection pooling middleware
+- **pg_stat_statements**: Query performance analysis
+- **auto_explain**: Slow query logging
 
 ---
 
-**Last Updated**: January 2026  
-**Status**: Production Ready
+**Last Updated**: February 2026  
+**Status**: Production Ready with PostgreSQL  
+**Database**: PostgreSQL 13+ (Recommended)

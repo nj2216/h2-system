@@ -46,6 +46,21 @@
                         </label>
                     </div>
 
+                    <hr class="my-4">
+                    <h5 class="mb-3"><i class="bi bi-lock"></i> Change Password (Optional)</h5>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="new_password" class="form-label">New Password</label>
+                            <input type="password" class="form-control" id="new_password" name="new_password" placeholder="Leave empty to keep current password">
+                            <small class="text-muted">Minimum 6 characters</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="confirm_password" class="form-label">Confirm Password</label>
+                            <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="Confirm new password">
+                        </div>
+                    </div>
+
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                         <a href="{{ url_for('auth.users_list') }}" class="btn btn-secondary">Cancel</a>
                         <button type="submit" class="btn btn-primary"><i class="bi bi-check-circle"></i> Update User</button>
