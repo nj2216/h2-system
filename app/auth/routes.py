@@ -2,7 +2,7 @@
 Authentication blueprint routes
 """
 from flask import Blueprint, render_template, redirect, url_for, flash, request
-from flask_login import login_user, logout_user, current_user
+from flask_login import login_user, logout_user, current_user, login_required
 from ..extensions import db
 from app.models import User
 from app.auth.utils import role_required
@@ -48,6 +48,44 @@ def logout():
     logout_user()
     flash('You have been logged out successfully.', 'success')
     return redirect(url_for('auth.login'))
+
+
+@auth_bp.route('/account/change-password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    """Allow users to change their own password."""
+    if request.method == 'POST':
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+
+        if not all([current_password, new_password, confirm_password]):
+            flash('Please fill in all password fields.', 'danger')
+            return redirect(url_for('auth.change_password'))
+
+        if not current_user.check_password(current_password):
+            flash('Current password is incorrect.', 'danger')
+            return redirect(url_for('auth.change_password'))
+
+        if new_password != confirm_password:
+            flash('New password and confirmation do not match.', 'danger')
+            return redirect(url_for('auth.change_password'))
+
+        if len(new_password) < 6:
+            flash('New password must be at least 6 characters long.', 'danger')
+            return redirect(url_for('auth.change_password'))
+
+        if current_user.check_password(new_password):
+            flash('New password must be different from your current password.', 'danger')
+            return redirect(url_for('auth.change_password'))
+
+        current_user.set_password(new_password)
+        db.session.commit()
+
+        flash('Your password has been changed successfully.', 'success')
+        return redirect(url_for('dashboards.dashboard'))
+
+    return render_template('auth/change_password.html')
 
 
 @auth_bp.route('/users/register', methods=['GET', 'POST'])
