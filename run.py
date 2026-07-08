@@ -226,7 +226,7 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
         create_default_users()
-        create_sample_equipment()
+        # create_sample_equipment()
     
     # Run development server
     debug = os.environ.get('FLASK_DEBUG', True)
