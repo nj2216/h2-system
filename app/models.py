@@ -135,6 +135,11 @@ class Prescription(db.Model):
         else:
             return 'PENDING'
     
+    @property
+    def is_dispensed(self):
+        """Check if entire prescription has been fully dispensed"""
+        return self.overall_status == 'DISPENSED'
+    
     def __repr__(self):
         return f'<Prescription {self.id} - Student {self.student_id} ({self.overall_status})>'
 
@@ -165,6 +170,11 @@ class PrescriptionItem(db.Model):
     def get_medicine(self):
         """Get either real or dummy medicine"""
         return self.medicine if self.medicine else self.dummy_medicine
+    
+    @property
+    def is_dispensed(self):
+        """Check if item has been fully dispensed"""
+        return self.status == 'DISPENSED'
     
     def __repr__(self):
         med = self.get_medicine()

@@ -209,6 +209,45 @@ class EquipmentPenaltyOverrideTestCase(unittest.TestCase):
         self.assertIn('Override / Revert Penalty', html)
         self.assertIn('Set to ₹0 (Waive)', html)
         self.assertIn('Revert to ₹0.00', html)
+        self.assertIn('Print Issues Report', html)
+        self.assertIn('Quick Print', html)
+
+    def test_print_issues_route_as_h2(self):
+        """Test GET /equipment/issues/print by H2 member"""
+        self.client.post('/login', data={'username': 'h2_test', 'password': 'pass123'}, follow_redirects=True)
+
+        res = self.client.get('/equipment/issues/print')
+        self.assertEqual(res.status_code, 200)
+        html = res.data.decode('utf-8')
+
+        # Check official letterhead
+        self.assertIn('SRI SATHYA SAI INSTITUTE OF HIGHER LEARNING', html)
+        self.assertIn('NANDIGIRI HOSTEL', html)
+        self.assertIn('HOLISTIC HEALTH (H2) TEAM', html)
+        self.assertIn('Medical Equipment Issues & Penalties Audit Report', html)
+
+        # Check summary metrics
+        self.assertIn('Total Issues', html)
+        self.assertIn('Total Penalty', html)
+        self.assertIn('Unpaid Fine', html)
+
+        # Check issue row
+        self.assertIn('Blood Pressure Monitor', html)
+        self.assertIn('ROLL101', html)
+        self.assertIn('200.00', html)
+
+        # Check H2 attestation and signature block
+        self.assertIn('H2 Health Team Member Attestation', html)
+        self.assertIn('h2_test', html)
+        self.assertIn('H2 Member Signature', html)
+        self.assertIn('Hostel Health Office Seal', html)
+
+    def test_print_issues_unauthorized_student(self):
+        """Test that Student cannot access print issues report"""
+        self.client.post('/login', data={'username': 'student_test', 'password': 'pass123'}, follow_redirects=True)
+
+        res = self.client.get('/equipment/issues/print', follow_redirects=False)
+        self.assertEqual(res.status_code, 302)  # Blocked by require_role
 
 
 if __name__ == '__main__':

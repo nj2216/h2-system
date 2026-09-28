@@ -5,21 +5,33 @@
 {% block content %}
 <style>
     .btn-group .btn { flex: 1; }
+    
+    .penalty-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+    }
 </style>
-<div class="container mt-4">
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h2><i class="bi bi-receipt"></i> Equipment Penalty Report</h2>
+
+<div class="penalty-header">
+    <div class="row align-items-center">
+        <div class="col-md-6">
+            <h2 class="mb-0 text-white"><i class="bi bi-receipt"></i> Equipment Penalty Report</h2>
         </div>
-        <div class="col-md-4 text-end d-flex justify-content-end align-items-center gap-2">
-            <a href="{{ url_for('equipment.print_issues', status='all') }}" target="_blank" class="btn btn-outline-primary btn-sm" title="Print full issues and penalties report with H2 verification">
+        <div class="col-md-6 text-md-end mt-3 mt-md-0 d-flex flex-wrap justify-content-md-end align-items-center gap-2">
+            <a href="{{ url_for('equipment.print_issues', status='all') }}" target="_blank" class="btn btn-light btn-sm" title="Print full issues and penalties report with H2 verification">
                 <i class="bi bi-printer"></i> Print Report
             </a>
-            <div class="alert alert-warning mb-0 py-1 px-3" role="alert">
+            <span class="badge bg-warning text-dark fs-6 py-2 px-3">
                 <strong>Total Unpaid:</strong> ₹{{ "%.2f"|format(total_penalty) }}
-            </div>
+            </span>
         </div>
     </div>
+</div>
+
+<div class="container mt-4">
 
     <!-- Status Filters -->
     <div class="mb-4">
@@ -246,14 +258,14 @@
                         <div class="modal-content">
                             <form method="POST" action="{{ url_for('equipment.override_penalty', issue_id=issue.id) }}">
                                 <input type="hidden" name="redirect_to" value="{{ request.full_path }}">
-                                <div class="modal-header bg-light">
+                                <div class="modal-header border-bottom">
                                     <h5 class="modal-title" id="overridePenaltyModalLabel{{ issue.id }}">
                                         <i class="bi bi-arrow-counterclockwise text-warning"></i> Override / Revert Penalty
                                     </h5>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
-                                    <div class="card mb-3 border-0 bg-light">
+                                    <div class="card mb-3 border bg-body-tertiary">
                                         <div class="card-body p-3">
                                             <div class="d-flex justify-content-between align-items-start">
                                                 <div>

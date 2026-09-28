@@ -122,7 +122,7 @@
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-sm">
-                        <thead class="table-light">
+                        <thead>
                             <tr>
                                 <th>Date</th>
                                 <th>Doctor</th>
@@ -154,13 +154,13 @@
 <div class="row">
     <div class="col-md-12">
         <div class="card shadow">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0"><i class="bi bi-prescription2"></i> Active Prescriptions</h5>
+            <div class="card-header border-bottom">
+                <h5 class="mb-0 text-warning"><i class="bi bi-prescription2"></i> Active Prescriptions</h5>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-sm">
-                        <thead class="table-light">
+                        <thead>
                             <tr>
                                 <th>Medicine</th>
                                 <th>Dosage</th>
@@ -173,13 +173,25 @@
                             {% for rx in prescriptions %}
                                 {% for item in rx.items %}
                                     <tr>
-                                        <td>{{ item.medicine.name }}</td>
+                                        <td>
+                                            {% if item.medicine %}
+                                                {{ item.medicine.name }}
+                                            {% elif item.dummy_medicine %}
+                                                {{ item.dummy_medicine.name }} <small class="text-muted">(Not in stock)</small>
+                                            {% else %}
+                                                Unknown
+                                            {% endif %}
+                                        </td>
                                         <td>{{ item.dosage or '-' }}</td>
                                         <td>{{ item.frequency or '-' }}</td>
                                         <td>{{ item.duration_days or '-' }} days</td>
                                         <td>
-                                            {% if item.is_dispensed %}
+                                            {% if item.status == 'DISPENSED' or item.is_dispensed %}
                                                 <span class="badge bg-success">Dispensed</span>
+                                            {% elif item.status == 'PARTIAL' %}
+                                                <span class="badge bg-info">Partial</span>
+                                            {% elif item.status == 'OUT_OF_STOCK' %}
+                                                <span class="badge bg-danger">Out of Stock</span>
                                             {% else %}
                                                 <span class="badge bg-warning">Pending</span>
                                             {% endif %}

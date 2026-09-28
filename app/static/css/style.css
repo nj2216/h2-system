@@ -77,8 +77,30 @@ body {
 
 .card-header {
     border-bottom: 1px solid var(--light-border);
-    padding: 1rem;
+    padding: 0.875rem 1.25rem;
     background-color: var(--light-muted);
+    color: var(--light-text);
+}
+
+.card-header h1, .card-header h2, .card-header h3,
+.card-header h4, .card-header h5, .card-header h6 {
+    color: var(--light-text);
+    margin-bottom: 0;
+}
+
+[data-bs-theme="dark"] .card-header {
+    background-color: #111827 !important;
+    border-bottom-color: #374151 !important;
+    color: #f8fafc !important;
+}
+
+[data-bs-theme="dark"] .card-header h1,
+[data-bs-theme="dark"] .card-header h2,
+[data-bs-theme="dark"] .card-header h3,
+[data-bs-theme="dark"] .card-header h4,
+[data-bs-theme="dark"] .card-header h5,
+[data-bs-theme="dark"] .card-header h6 {
+    color: #f8fafc !important;
 }
 
 /* Badges */
@@ -92,16 +114,95 @@ body {
 .table {
     margin-bottom: 0;
     color: var(--light-text);
+    border-color: var(--light-border);
 }
 
-.table thead {
-    background-color: var(--light-muted);
-    border-bottom: 1px solid var(--light-border);
+.table thead th,
+.table th {
+    background-color: var(--light-muted) !important;
+    color: var(--light-text) !important;
+    border-bottom: 2px solid var(--light-border) !important;
+    border-top: none !important;
+    font-weight: 600;
+    font-size: 0.875rem;
+    letter-spacing: 0.02em;
+    vertical-align: middle;
+}
+
+.table tbody td {
+    color: var(--light-text);
+    border-bottom-color: var(--light-border);
+    vertical-align: middle;
 }
 
 .table-responsive {
     border-radius: 0.5rem;
     border: 1px solid var(--light-border);
+    background-color: var(--light-bg);
+}
+
+/* Light theme table headers */
+[data-bs-theme="light"] .table thead th,
+[data-bs-theme="light"] thead.table-light th,
+[data-bs-theme="light"] thead.table-dark th {
+    background-color: #f1f5f9 !important;
+    color: #1e293b !important;
+    border-bottom: 2px solid #cbd5e1 !important;
+}
+
+/* Dark theme table headers & rows */
+[data-bs-theme="dark"] .table {
+    --bs-table-color: #f3f4f6;
+    --bs-table-bg: transparent;
+    --bs-table-border-color: #374151;
+    --bs-table-hover-bg: #283344;
+    --bs-table-hover-color: #ffffff;
+    --bs-table-striped-bg: #1e2636;
+    --bs-table-striped-color: #f3f4f6;
+    color: #f3f4f6;
+}
+
+[data-bs-theme="dark"] .table thead th,
+[data-bs-theme="dark"] .table th,
+[data-bs-theme="dark"] thead.table-light th,
+[data-bs-theme="dark"] thead.table-dark th,
+[data-bs-theme="dark"] .table thead.table-light > tr > th,
+[data-bs-theme="dark"] .table thead.table-dark > tr > th,
+[data-bs-theme="dark"] .table-light,
+[data-bs-theme="dark"] .table-light > *,
+[data-bs-theme="dark"] .table-dark,
+[data-bs-theme="dark"] .table-dark > * {
+    --bs-table-bg: #111827 !important;
+    --bs-table-color: #f8fafc !important;
+    --bs-table-border-color: #374151 !important;
+    background-color: #111827 !important;
+    color: #f8fafc !important;
+    border-bottom: 2px solid #374151 !important;
+}
+
+[data-bs-theme="dark"] .table tbody td {
+    color: #f3f4f6;
+    border-bottom-color: #374151;
+}
+
+[data-bs-theme="dark"] .table-hover > tbody > tr:hover > * {
+    --bs-table-bg-state: #283344;
+    color: #ffffff !important;
+}
+
+/* Keep contextual table status headers (e.g. overdue table) tinted appropriately */
+.table thead.table-danger th,
+.table-danger thead th {
+    background-color: rgba(220, 38, 38, 0.15) !important;
+    color: #dc2626 !important;
+    border-bottom: 2px solid rgba(220, 38, 38, 0.3) !important;
+}
+
+[data-bs-theme="dark"] .table thead.table-danger th,
+[data-bs-theme="dark"] .table-danger thead th {
+    background-color: rgba(220, 38, 38, 0.25) !important;
+    color: #fca5a5 !important;
+    border-bottom: 2px solid rgba(220, 38, 38, 0.5) !important;
 }
 
 /* Buttons */
@@ -304,6 +405,12 @@ footer {
     border-bottom: 1px solid var(--light-border);
     background-color: var(--light-muted);
     color: var(--light-text);
+    padding: 1rem 1.25rem;
+}
+
+.modal-header .modal-title {
+    color: var(--light-text);
+    font-weight: 600;
 }
 
 .modal-content {
@@ -315,6 +422,106 @@ footer {
 .modal-footer {
     border-top: 1px solid var(--light-border);
     background-color: var(--light-muted);
+}
+
+[data-bs-theme="dark"] .modal-header {
+    background-color: #111827 !important;
+    border-bottom-color: #374151 !important;
+    color: #f8fafc !important;
+}
+
+[data-bs-theme="dark"] .modal-header .modal-title {
+    color: #f8fafc !important;
+}
+
+[data-bs-theme="dark"] .modal-content {
+    background-color: #1f2937 !important;
+    color: #f8fafc !important;
+    border-color: #374151 !important;
+}
+
+[data-bs-theme="dark"] .modal-footer {
+    background-color: #111827 !important;
+    border-top-color: #374151 !important;
+}
+
+/* Standardized Page Banner Headers */
+.issue-header,
+.penalty-header,
+.manage-header,
+.equipments-header,
+.doctor-header,
+.prescription-header,
+.students-list-header,
+.inventory-header,
+.medicine-header,
+.sick-header,
+.calender-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #ffffff !important;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.issue-header h1, .issue-header h2, .issue-header h3,
+.penalty-header h1, .penalty-header h2, .penalty-header h3,
+.manage-header h1, .manage-header h2, .manage-header h3,
+.equipments-header h1, .equipments-header h2, .equipments-header h3,
+.doctor-header h1, .doctor-header h2, .doctor-header h3,
+.prescription-header h1, .prescription-header h2, .prescription-header h3,
+.students-list-header h1, .students-list-header h2, .students-list-header h3,
+.inventory-header h1, .inventory-header h2, .inventory-header h3,
+.medicine-header h1, .medicine-header h2, .medicine-header h3,
+.sick-header h1, .sick-header h2, .sick-header h3,
+.calender-header h1, .calender-header h2, .calender-header h3 {
+    color: #ffffff !important;
+}
+
+.issue-header p,
+.penalty-header p,
+.manage-header p,
+.equipments-header p,
+.doctor-header p,
+.prescription-header p,
+.students-list-header p,
+.inventory-header p,
+.medicine-header p,
+.sick-header p,
+.calender-header p {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+/* Dark Theme General Overrides */
+[data-bs-theme="dark"] .card {
+    background-color: #1f2937;
+    border-color: #374151;
+    color: #f3f4f6;
+}
+
+[data-bs-theme="dark"] .text-muted {
+    color: #9ca3af !important;
+}
+
+[data-bs-theme="dark"] .bg-light,
+[data-bs-theme="dark"] .text-bg-light {
+    background-color: #111827 !important;
+    color: #f3f4f6 !important;
+}
+
+[data-bs-theme="dark"] .card.bg-light {
+    background-color: #1a2234 !important;
+    border: 1px solid #374151 !important;
+}
+
+[data-bs-theme="dark"] pre.bg-light {
+    background-color: #0d1117 !important;
+    color: #e6edf3 !important;
+    border: 1px solid #374151;
+}
+
+[data-bs-theme="dark"] .bg-body-tertiary {
+    background-color: #161f2e !important;
 }
 
 /* Scrollbar */
