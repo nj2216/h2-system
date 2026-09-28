@@ -181,12 +181,12 @@
                    title="Open complete printable report with H2 signature section">
                     <i class="bi bi-printer"></i> Print Issues Report
                 </a>
-                <button type="button" 
+                <!--    <button type="button" 
                         class="btn btn-outline-light btn-sm" 
                         onclick="window.print()" 
                         title="Quick print current screen">
                     <i class="bi bi-file-earmark-text"></i> Quick Print
-                </button>
+                </button> -->
                 {% if current_user.role in ['H2', 'Doctor', 'Director'] %}
                 <a href="{{ url_for('equipment.issue_equipment') }}" class="btn btn-light btn-sm">
                     <i class="bi bi-plus-circle"></i> New Issue

@@ -336,9 +336,9 @@
                     <td style="text-align: center;">{{ loop.index }}</td>
                     <td>
                         <strong>{{ issue.student.user.first_name ~ ' ' ~ issue.student.user.last_name if issue.student.user.first_name else issue.student.user.username }}</strong><br>
-                        <small class="text-muted">Roll: {{ issue.student.roll_number }}</small>
+                        <small class="text-muted">{{ issue.student.roll_number }}</small>
                         {% if issue.student.hostel_room %}
-                        <br><small class="text-muted">Room: {{ issue.student.hostel_room }}</small>
+                        <br><small class="text-muted">{{ issue.student.hostel_room }}</small>
                         {% endif %}
                     </td>
                     <td>
