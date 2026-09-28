@@ -121,8 +121,8 @@ def issue_list():
             query = query.filter_by(student_id=student.id)
         else:
             query = query.filter(False)  # No results for non-student users
-    elif current_user.role in ['Warden', 'H2', 'Office']:
-        # Wardens, H2, and Office can view all issues
+    elif current_user.role in ['Warden', 'H2', 'Office', 'Director']:
+        # Wardens, H2, Office, and Director can view all issues
         pass
     elif current_user.role == 'Doctor':
         # Doctor can view issues they issued
@@ -156,6 +156,71 @@ def issue_list():
     issues = query.order_by(EquipmentIssue.issued_date.desc()).paginate(page=page, per_page=20)
     
     return render_template('equipment/issue_list.html', issues=issues, status_filter=status_filter, search=search)
+
+
+@equipment_bp.route('/issues/print', methods=['GET'])
+@login_required
+@require_role('H2', 'Director', 'Office', 'Warden')
+def print_issues():
+    """Printable report of equipment issues and penalties with H2 verification"""
+    status_filter = request.args.get('status', 'all')
+    search = request.args.get('search', '')
+    
+    query = EquipmentIssue.query
+    
+    # Status filter
+    if status_filter != 'all':
+        query = query.filter_by(status=status_filter)
+        
+    # Search
+    if search:
+        query = query.join(Student).join(MedicalEquipment).filter(
+            or_(
+                Student.roll_number.ilike(f'%{search}%'),
+                MedicalEquipment.name.ilike(f'%{search}%')
+            )
+        )
+        
+    # Order by issued_date desc and fetch all without pagination limit for printing
+    issues = query.order_by(EquipmentIssue.issued_date.desc()).all()
+    
+    # Compute summary statistics
+    total_count = len(issues)
+    issued_count = sum(1 for i in issues if i.status == 'Issued')
+    overdue_count = sum(1 for i in issues if i.status == 'Overdue')
+    returned_count = sum(1 for i in issues if i.status == 'Returned')
+    
+    total_penalty = sum(i.penalty_amount for i in issues if i.penalty_amount)
+    unpaid_penalty = sum(i.penalty_amount for i in issues if i.penalty_amount and not i.penalty_paid)
+    paid_penalty = sum(i.penalty_amount for i in issues if i.penalty_amount and i.penalty_paid)
+    
+    waived_count = sum(1 for i in issues if i.penalty_overridden and i.penalty_amount == 0)
+    waived_amount = sum(i.original_penalty_amount for i in issues if i.penalty_overridden and i.penalty_amount == 0)
+    overridden_count = sum(1 for i in issues if i.penalty_overridden and i.penalty_amount > 0)
+    
+    summary = {
+        'total_count': total_count,
+        'issued_count': issued_count,
+        'overdue_count': overdue_count,
+        'returned_count': returned_count,
+        'total_penalty': total_penalty,
+        'unpaid_penalty': unpaid_penalty,
+        'paid_penalty': paid_penalty,
+        'waived_count': waived_count,
+        'waived_amount': waived_amount,
+        'overridden_count': overridden_count
+    }
+    
+    now = datetime.utcnow()
+    
+    return render_template(
+        'equipment/print_issues.html',
+        issues=issues,
+        summary=summary,
+        status_filter=status_filter,
+        search=search,
+        now=now
+    )
 
 
 @equipment_bp.route('/return/<int:issue_id>', methods=['GET', 'POST'])
@@ -299,18 +364,25 @@ def manage_equipment():
 
 @equipment_bp.route('/penalty-report', methods=['GET'])
 @login_required
-@require_role('Office', 'H2')
+@require_role('Office', 'H2', 'Director', 'Warden')
 def penalty_report():
     """View penalty report for overdue/damaged/lost equipment"""
     page = request.args.get('page', 1, type=int)
-    filter_type = request.args.get('filter', 'all')  # all, unpaid, paid
+    filter_type = request.args.get('filter', 'all')  # all, unpaid, paid, waived
     
-    query = EquipmentIssue.query.filter(EquipmentIssue.penalty_amount > 0)
+    query = EquipmentIssue.query.filter(
+        or_(
+            EquipmentIssue.penalty_amount > 0,
+            EquipmentIssue.penalty_overridden == True
+        )
+    )
     
     if filter_type == 'unpaid':
-        query = query.filter_by(penalty_paid=False)
+        query = query.filter(EquipmentIssue.penalty_paid == False, EquipmentIssue.penalty_amount > 0)
     elif filter_type == 'paid':
         query = query.filter_by(penalty_paid=True)
+    elif filter_type == 'waived':
+        query = query.filter(EquipmentIssue.penalty_overridden == True, EquipmentIssue.penalty_amount == 0)
     
     issues = query.order_by(EquipmentIssue.updated_at.desc()).paginate(page=page, per_page=20)
     
@@ -323,7 +395,7 @@ def penalty_report():
 
 @equipment_bp.route('/mark-penalty-paid/<int:issue_id>', methods=['POST'])
 @login_required
-@require_role('Office', 'H2')
+@require_role('Office', 'H2', 'Director', 'Warden')
 def mark_penalty_paid(issue_id):
     """Mark penalty as paid"""
     issue = EquipmentIssue.query.get_or_404(issue_id)
@@ -340,6 +412,65 @@ def mark_penalty_paid(issue_id):
         flash('Failed to process penalty payment. Please try again or contact support.', 'danger')
     
     return redirect(url_for('equipment.penalty_report'))
+
+
+@equipment_bp.route('/override-penalty/<int:issue_id>', methods=['POST'])
+@login_required
+@require_role('H2', 'Director', 'Office', 'Warden')
+def override_penalty(issue_id):
+    """Override, revert, or restore equipment issue penalty"""
+    issue = EquipmentIssue.query.get_or_404(issue_id)
+    
+    action = request.form.get('action', 'override')  # 'revert', 'override', 'restore'
+    reason = request.form.get('reason', '').strip()
+    
+    try:
+        student_name = f"{issue.student.user.first_name} {issue.student.user.last_name}" if issue.student and issue.student.user else f"Issue #{issue.id}"
+        
+        if action == 'revert':
+            if not reason:
+                reason = "Penalty waived/reverted by administrator"
+            issue.revert_penalty(reason=reason, user_id=current_user.id)
+            flash(f'Penalty for {student_name} ({issue.equipment.name}) was successfully reverted to ₹0.00.', 'success')
+            
+        elif action == 'restore':
+            original = issue.original_penalty_amount
+            issue.restore_penalty()
+            flash(f'Penalty for {student_name} has been restored to ₹{original:.2f}.', 'info')
+            
+        elif action == 'override':
+            new_amount_str = request.form.get('penalty_amount')
+            if new_amount_str is None or new_amount_str == '':
+                flash('Please provide a valid penalty amount.', 'danger')
+                return redirect(url_for('equipment.issue_list'))
+            
+            new_amount = float(new_amount_str)
+            if new_amount < 0:
+                flash('Penalty amount cannot be negative.', 'danger')
+                return redirect(url_for('equipment.issue_list'))
+            
+            if not reason:
+                reason = "Penalty adjusted by administrator"
+                
+            issue.override_penalty(new_amount, reason=reason, user_id=current_user.id)
+            if new_amount == 0:
+                flash(f'Penalty for {student_name} ({issue.equipment.name}) was reverted/waived to ₹0.00.', 'success')
+            else:
+                flash(f'Penalty for {student_name} ({issue.equipment.name}) was updated to ₹{new_amount:.2f}.', 'success')
+        else:
+            flash('Invalid action requested.', 'danger')
+            
+    except ValueError:
+        flash('Invalid penalty amount entered. Please enter a valid number.', 'danger')
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Penalty override error: {str(e)}', exc_info=True)
+        flash('Failed to update penalty. Please try again or contact support.', 'danger')
+        
+    redirect_to = request.form.get('redirect_to')
+    if redirect_to and redirect_to.startswith('/'):
+        return redirect(redirect_to)
+    return redirect(url_for('equipment.issue_list'))
 
 
 @equipment_bp.route('/student-dashboard', methods=['GET'])

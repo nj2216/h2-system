@@ -45,12 +45,27 @@ def create_app(config_name=None):
     # Register blueprints
     register_blueprints(app)
     
-    # Create database tables
-    # with app.app_context():
-    #     # In development, drop and recreate all tables to ensure schema matches models
-    #     if app.config.get('ENV') == 'development' or app.config.get('DEBUG', False):
-    #         db.drop_all()
-    #     db.create_all()
+    # Ensure database schema is up-to-date
+    with app.app_context():
+        db.create_all()
+        try:
+            from sqlalchemy import inspect, text
+            inspector = inspect(db.engine)
+            if 'equipment_issues' in inspector.get_table_names():
+                existing_cols = {col['name'] for col in inspector.get_columns('equipment_issues')}
+                new_cols = [
+                    ('penalty_overridden', 'BOOLEAN DEFAULT 0'),
+                    ('original_penalty_amount', 'FLOAT DEFAULT 0.0'),
+                    ('penalty_override_reason', 'TEXT'),
+                    ('penalty_overridden_by_id', 'INTEGER REFERENCES users(id)'),
+                    ('penalty_overridden_at', 'DATETIME')
+                ]
+                for col_name, col_type in new_cols:
+                    if col_name not in existing_cols:
+                        db.session.execute(text(f'ALTER TABLE equipment_issues ADD COLUMN {col_name} {col_type}'))
+                db.session.commit()
+        except Exception:
+            db.session.rollback()
     
     return app
 

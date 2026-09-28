@@ -171,19 +171,21 @@
                         </thead>
                         <tbody>
                             {% for rx in prescriptions %}
-                            <tr>
-                                <td>{{ rx.medicine_name }}</td>
-                                <td>{{ rx.dosage }}</td>
-                                <td>{{ rx.frequency }}</td>
-                                <td>{{ rx.duration_days }} days</td>
-                                <td>
-                                    {% if rx.is_dispensed %}
-                                        <span class="badge bg-success">Dispensed</span>
-                                    {% else %}
-                                        <span class="badge bg-warning">Pending</span>
-                                    {% endif %}
-                                </td>
-                            </tr>
+                                {% for item in rx.items %}
+                                    <tr>
+                                        <td>{{ item.medicine.name }}</td>
+                                        <td>{{ item.dosage or '-' }}</td>
+                                        <td>{{ item.frequency or '-' }}</td>
+                                        <td>{{ item.duration_days or '-' }} days</td>
+                                        <td>
+                                            {% if item.is_dispensed %}
+                                                <span class="badge bg-success">Dispensed</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">Pending</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
                             {% endfor %}
                         </tbody>
                     </table>

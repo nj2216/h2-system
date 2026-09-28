@@ -11,8 +11,11 @@
         <div class="col-md-8">
             <h2><i class="bi bi-receipt"></i> Equipment Penalty Report</h2>
         </div>
-        <div class="col-md-4 text-end">
-            <div class="alert alert-warning mb-0" role="alert">
+        <div class="col-md-4 text-end d-flex justify-content-end align-items-center gap-2">
+            <a href="{{ url_for('equipment.print_issues', status='all') }}" target="_blank" class="btn btn-outline-primary btn-sm" title="Print full issues and penalties report with H2 verification">
+                <i class="bi bi-printer"></i> Print Report
+            </a>
+            <div class="alert alert-warning mb-0 py-1 px-3" role="alert">
                 <strong>Total Unpaid:</strong> ₹{{ "%.2f"|format(total_penalty) }}
             </div>
         </div>
@@ -32,6 +35,10 @@
             <a href="{{ url_for('equipment.penalty_report', filter='paid') }}" 
                class="btn btn-sm {% if filter_type == 'paid' %}btn-success{% else %}btn-outline-success{% endif %}">
                 <i class="bi bi-check-circle"></i> Paid
+            </a>
+            <a href="{{ url_for('equipment.penalty_report', filter='waived') }}" 
+               class="btn btn-sm {% if filter_type == 'waived' %}btn-secondary{% else %}btn-outline-secondary{% endif %}">
+                <i class="bi bi-shield-slash"></i> Waived
             </a>
         </div>
     </div>
@@ -78,10 +85,25 @@
                         {% endif %}
                     </td>
                     <td data-label="Penalty Amount">
-                        <strong>₹{{ "%.2f"|format(issue.penalty_amount) }}</strong>
+                        {% if issue.penalty_overridden %}
+                            {% if issue.penalty_amount == 0 %}
+                                <span class="badge bg-secondary text-decoration-line-through">₹{{ "%.2f"|format(issue.original_penalty_amount) }}</span>
+                                <span class="badge bg-success" title="{{ issue.penalty_override_reason or 'Waived by Admin' }}"><i class="bi bi-check-circle"></i> Waived</span>
+                            {% else %}
+                                <strong>₹{{ "%.2f"|format(issue.penalty_amount) }}</strong>
+                                <br><span class="badge bg-info text-dark" title="{{ issue.penalty_override_reason or 'Overridden' }}">Overridden</span>
+                            {% endif %}
+                        {% else %}
+                            <strong>₹{{ "%.2f"|format(issue.penalty_amount) }}</strong>
+                        {% endif %}
                     </td>
                     <td data-label="Status" class="d-none d-md-table-cell">
-                        {% if issue.penalty_paid %}
+                        {% if issue.penalty_overridden and issue.penalty_amount == 0 %}
+                            <span class="badge bg-secondary">Waived / Reverted</span>
+                            {% if issue.penalty_override_reason %}
+                                <br><small class="text-muted">{{ issue.penalty_override_reason }}</small>
+                            {% endif %}
+                        {% elif issue.penalty_paid %}
                             <span class="badge bg-success">Paid</span>
                             <br>
                             <small class="text-muted">{{ issue.penalty_paid_date.strftime('%Y-%m-%d') }}</small>
@@ -94,12 +116,21 @@
                             <button class="btn btn-sm btn-outline-info d-lg-none" data-bs-toggle="modal" data-bs-target="#detailsModal{{ issue.id }}" title="More Info">
                                 <i class="bi bi-info-circle"></i>
                             </button>
-                            {% if not issue.penalty_paid %}
+                            {% if not issue.penalty_paid and issue.penalty_amount > 0 %}
                             <form method="POST" action="{{ url_for('equipment.mark_penalty_paid', issue_id=issue.id) }}" style="display:inline;" class="flex-grow-1">
                                 <button type="submit" class="btn btn-sm btn-outline-success w-100" onclick="return confirm('Mark penalty as paid?')">
                                     <i class="bi bi-check-circle"></i> Mark Paid
                                 </button>
                             </form>
+                            {% endif %}
+                            {% if current_user.role in ['H2', 'Director', 'Office', 'Warden'] %}
+                            <button type="button" 
+                                    class="btn btn-sm {% if issue.penalty_overridden %}btn-outline-info{% elif issue.penalty_amount > 0 %}btn-outline-warning{% else %}btn-outline-secondary{% endif %}" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#overridePenaltyModal{{ issue.id }}" 
+                                    title="Override / Revert Penalty">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </button>
                             {% endif %}
                         </div>
                     </td>
@@ -154,14 +185,31 @@
                                     </div>
                                     <div class="col-sm-6">
                                         <small class="text-muted">Penalty Amount</small>
-                                        <p class="mb-0"><strong>₹{{ "%.2f"|format(issue.penalty_amount) }}</strong></p>
+                                        <p class="mb-0">
+                                            {% if issue.penalty_overridden %}
+                                                {% if issue.penalty_amount == 0 %}
+                                                    <span class="badge bg-secondary text-decoration-line-through">₹{{ "%.2f"|format(issue.original_penalty_amount) }}</span>
+                                                    <span class="badge bg-success">Waived (₹0.00)</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">₹{{ "%.2f"|format(issue.penalty_amount) }}</span>
+                                                    <span class="badge bg-info text-dark">Overridden (Orig: ₹{{ "%.2f"|format(issue.original_penalty_amount) }})</span>
+                                                {% endif %}
+                                            {% else %}
+                                                <strong>₹{{ "%.2f"|format(issue.penalty_amount) }}</strong>
+                                            {% endif %}
+                                        </p>
                                     </div>
                                 </div>
                                 <div class="row">
                                     <div class="col-12">
                                         <small class="text-muted">Status</small>
                                         <p class="mb-0">
-                                            {% if issue.penalty_paid %}
+                                            {% if issue.penalty_overridden and issue.penalty_amount == 0 %}
+                                                <span class="badge bg-secondary">Waived / Reverted</span>
+                                                {% if issue.penalty_override_reason %}
+                                                    <br><small class="text-muted">Reason: {{ issue.penalty_override_reason }}</small>
+                                                {% endif %}
+                                            {% elif issue.penalty_paid %}
                                                 <span class="badge bg-success">Paid</span>
                                                 <br>
                                                 <small class="text-muted">{{ issue.penalty_paid_date.strftime('%Y-%m-%d') }}</small>
@@ -174,7 +222,12 @@
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                {% if not issue.penalty_paid %}
+                                {% if current_user.role in ['H2', 'Director', 'Office', 'Warden'] %}
+                                <button type="button" class="btn btn-warning" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#overridePenaltyModal{{ issue.id }}">
+                                    <i class="bi bi-arrow-counterclockwise"></i> Override / Revert
+                                </button>
+                                {% endif %}
+                                {% if not issue.penalty_paid and issue.penalty_amount > 0 %}
                                 <form method="POST" action="{{ url_for('equipment.mark_penalty_paid', issue_id=issue.id) }}" style="display:inline;">
                                     <button type="submit" class="btn btn-success" onclick="return confirm('Mark penalty as paid?')">
                                         <i class="bi bi-check-circle"></i> Mark Paid
@@ -185,6 +238,125 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Override / Revert Penalty Modal -->
+                {% if current_user.role in ['H2', 'Director', 'Office', 'Warden'] %}
+                <div class="modal fade" id="overridePenaltyModal{{ issue.id }}" tabindex="-1" aria-labelledby="overridePenaltyModalLabel{{ issue.id }}" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <form method="POST" action="{{ url_for('equipment.override_penalty', issue_id=issue.id) }}">
+                                <input type="hidden" name="redirect_to" value="{{ request.full_path }}">
+                                <div class="modal-header bg-light">
+                                    <h5 class="modal-title" id="overridePenaltyModalLabel{{ issue.id }}">
+                                        <i class="bi bi-arrow-counterclockwise text-warning"></i> Override / Revert Penalty
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="card mb-3 border-0 bg-light">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <h6 class="mb-1"><strong>{{ issue.student.user.first_name }} {{ issue.student.user.last_name }}</strong></h6>
+                                                    <small class="text-muted">{{ issue.student.roll_number }} &bull; {{ issue.equipment.name }}</small>
+                                                </div>
+                                                <span class="badge {% if issue.status == 'Overdue' %}bg-danger{% elif issue.status == 'Returned' %}bg-success{% else %}bg-info{% endif %}">
+                                                    {{ issue.status }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {% if issue.penalty_overridden %}
+                                    <div class="alert alert-info py-2 px-3 small mb-3">
+                                        <i class="bi bi-info-circle-fill me-1"></i>
+                                        <strong>Currently Overridden:</strong> Original was ₹{{ "%.2f"|format(issue.original_penalty_amount) }}.
+                                        {% if issue.penalty_override_reason %}
+                                        <br><em>Reason: {{ issue.penalty_override_reason }}</em>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <label for="penalty_amount_report_{{ issue.id }}" class="form-label mb-0 fw-bold">Penalty Amount (₹)</label>
+                                            <span class="text-muted small">Current: <strong>₹{{ "%.2f"|format(issue.penalty_amount) }}</strong></span>
+                                        </div>
+                                        <div class="input-group">
+                                            <span class="input-group-text">₹</span>
+                                            <input type="number" 
+                                                   step="0.01" 
+                                                   min="0" 
+                                                   class="form-control" 
+                                                   id="penalty_amount_report_{{ issue.id }}" 
+                                                   name="penalty_amount" 
+                                                   value="{{ '%.2f'|format(issue.penalty_amount) }}" 
+                                                   required>
+                                            <button type="button" 
+                                                    class="btn btn-outline-danger" 
+                                                    onclick="document.getElementById('penalty_amount_report_{{ issue.id }}').value='0.00';" 
+                                                    title="Quick set to zero">
+                                                <i class="bi bi-arrow-counterclockwise"></i> Set to ₹0 (Waive)
+                                            </button>
+                                        </div>
+                                        <div class="form-text">Set to 0.00 to completely revert/waive the penalty.</div>
+                                    </div>
+
+                                    <div class="mb-2">
+                                        <label class="form-label small text-muted mb-1 d-block">Quick Reasons:</label>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill" style="font-size:0.75rem;" onclick="document.getElementById('reason_report_{{ issue.id }}').value='Returned on time - system delay';">Returned on time</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill" style="font-size:0.75rem;" onclick="document.getElementById('reason_report_{{ issue.id }}').value='Medical certificate / excused leave';">Medical certificate</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill" style="font-size:0.75rem;" onclick="document.getElementById('reason_report_{{ issue.id }}').value='Equipment was defective prior to issue';">Prior defect</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill" style="font-size:0.75rem;" onclick="document.getElementById('reason_report_{{ issue.id }}').value='Administrative waiver approved';">Admin waiver</button>
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="reason_report_{{ issue.id }}" class="form-label fw-bold">Reason for Override / Revert</label>
+                                        <textarea class="form-control" 
+                                                  id="reason_report_{{ issue.id }}" 
+                                                  name="reason" 
+                                                  rows="2" 
+                                                  placeholder="Enter the reason why penalty is being reverted or adjusted..." 
+                                                  required>{{ issue.penalty_override_reason or '' }}</textarea>
+                                    </div>
+                                </div>
+
+                                <div class="modal-footer d-flex justify-content-between">
+                                    <div>
+                                        {% if issue.penalty_overridden %}
+                                        <button type="submit" 
+                                                name="action" 
+                                                value="restore" 
+                                                class="btn btn-outline-secondary btn-sm" 
+                                                onclick="return confirm('Restore original calculated penalty of ₹{{ '%.2f'|format(issue.original_penalty_amount) }}?');">
+                                            <i class="bi bi-arrow-repeat"></i> Restore Original (₹{{ "%.2f"|format(issue.original_penalty_amount) }})
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" 
+                                                name="action" 
+                                                value="revert" 
+                                                class="btn btn-warning btn-sm" 
+                                                onclick="document.getElementById('penalty_amount_report_{{ issue.id }}').value='0.00'; return confirm('Are you sure you want to revert/waive this penalty to ₹0.00?');">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Revert to ₹0.00
+                                        </button>
+                                        <button type="submit" 
+                                                name="action" 
+                                                value="override" 
+                                                class="btn btn-primary btn-sm">
+                                            <i class="bi bi-check-circle"></i> Save Override
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
                 {% else %}
                 <tr>
                     <td colspan="7" class="text-center text-muted py-4">No penalties found</td>

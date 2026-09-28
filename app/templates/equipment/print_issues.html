@@ -1,0 +1,420 @@
+{% extends "base.html" %}
+
+{% block title %}Print Equipment Issues & Penalties Report - H2 System{% endblock %}
+
+{% block content %}
+<style>
+    /* Screen Styles */
+    .print-toolbar {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        padding: 1rem 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .report-sheet {
+        background: white;
+        color: #111;
+        padding: 2rem;
+        border-radius: 0.35rem;
+        box-shadow: 0 0.25rem 0.75rem rgba(0,0,0,0.08);
+        font-size: 0.88rem;
+    }
+
+    .report-letterhead {
+        text-align: center;
+        border-bottom: 2px solid #222;
+        padding-bottom: 0.8rem;
+        margin-bottom: 1.2rem;
+    }
+
+    .institute-title {
+        font-size: 1.25rem;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.2rem;
+    }
+
+    .hostel-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #444;
+        margin-bottom: 0.25rem;
+    }
+
+    .report-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: #0d6efd;
+        margin-top: 0.5rem;
+        letter-spacing: 0.5px;
+    }
+
+    .summary-box {
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        padding: 0.5rem 0.75rem;
+        text-align: center;
+        background: #fdfdfd;
+    }
+
+    .summary-box .num {
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin-bottom: 0;
+    }
+
+    .summary-box .lbl {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        color: #666;
+        letter-spacing: 0.5px;
+    }
+
+    .print-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+        font-size: 0.82rem;
+    }
+
+    .print-table th, .print-table td {
+        border: 1px solid #bbb;
+        padding: 6px 8px;
+        vertical-align: middle;
+    }
+
+    .print-table th {
+        background-color: #f1f3f5;
+        font-weight: 700;
+        color: #212529;
+        text-align: left;
+    }
+
+    .verification-box {
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 2px solid #222;
+        page-break-inside: avoid;
+    }
+
+    .stamp-box {
+        border: 1px dashed #777;
+        height: 70px;
+        width: 130px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        color: #888;
+        margin: 0 auto;
+    }
+
+    /* Print Styles */
+    @media print {
+        nav.navbar,
+        footer,
+        .print-toolbar,
+        .no-print,
+        #themeToggle {
+            display: none !important;
+        }
+
+        body {
+            background: white !important;
+            color: black !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            font-size: 10pt !important;
+        }
+
+        .container, .container-fluid {
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        .report-sheet {
+            box-shadow: none !important;
+            border: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        .report-title {
+            color: black !important;
+        }
+
+        .print-table th {
+            background-color: #e9ecef !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        .print-table tr {
+            page-break-inside: avoid;
+        }
+
+        .verification-box {
+            page-break-inside: avoid !important;
+        }
+
+        @page {
+            size: landscape;
+            margin: 8mm 10mm;
+        }
+    }
+</style>
+
+<div class="container my-4">
+    <!-- Screen Toolbar -->
+    <div class="print-toolbar no-print">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <h5 class="mb-1"><i class="bi bi-printer text-primary"></i> Equipment Issues & Penalties Report</h5>
+                <small class="text-muted">Printable document certified by H2 Health Team</small>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-primary" onclick="window.print()">
+                    <i class="bi bi-printer-fill"></i> Print / Save as PDF
+                </button>
+                <a href="{{ url_for('equipment.issue_list') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Issues List
+                </a>
+            </div>
+        </div>
+
+        <!-- Filter Quick-links -->
+        <hr class="my-3">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class="btn-group btn-group-sm" role="group">
+                <a href="{{ url_for('equipment.print_issues', status='all', search=search) }}" 
+                   class="btn {% if status_filter == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    All Issues ({{ summary.total_count }})
+                </a>
+                <a href="{{ url_for('equipment.print_issues', status='Issued', search=search) }}" 
+                   class="btn {% if status_filter == 'Issued' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    Active (Issued)
+                </a>
+                <a href="{{ url_for('equipment.print_issues', status='Overdue', search=search) }}" 
+                   class="btn {% if status_filter == 'Overdue' %}btn-danger{% else %}btn-outline-danger{% endif %}">
+                    Overdue
+                </a>
+                <a href="{{ url_for('equipment.print_issues', status='Returned', search=search) }}" 
+                   class="btn {% if status_filter == 'Returned' %}btn-success{% else %}btn-outline-success{% endif %}">
+                    Returned
+                </a>
+            </div>
+            <small class="text-muted"><i class="bi bi-info-circle"></i> Tip: Select 'Landscape' orientation in print settings for optimal table presentation.</small>
+        </div>
+    </div>
+
+    <!-- Printable Report Sheet -->
+    <div class="report-sheet">
+        <!-- Letterhead Header -->
+        <div class="report-letterhead">
+            <div class="institute-title">SRI SATHYA SAI INSTITUTE OF HIGHER LEARNING</div>
+            <div class="hostel-title">NANDIGIRI HOSTEL &bull; HOLISTIC HEALTH (H2) TEAM</div>
+            <div class="report-title">Medical Equipment Issues & Penalties Audit Report</div>
+        </div>
+
+        <!-- Metadata Row -->
+        <div class="row mb-3" style="font-size: 0.85rem;">
+            <div class="col-6">
+                <strong>Generated On:</strong> {{ now.strftime('%d-%b-%Y %I:%M %p') }}<br>
+                <strong>Printed / Certified By:</strong> {{ current_user.first_name ~ ' ' ~ current_user.last_name if current_user.first_name else current_user.username }} ({{ current_user.role }} - H2 Team)
+            </div>
+            <div class="col-6 text-end">
+                <strong>Status Filter:</strong> {{ status_filter|capitalize }}<br>
+                <strong>Search Filter:</strong> {{ search or 'None (All matching records)' }}
+            </div>
+        </div>
+
+        <!-- Summary Statistics Row -->
+        <div class="row g-2 mb-3">
+            <div class="col">
+                <div class="summary-box">
+                    <p class="num text-primary">{{ summary.total_count }}</p>
+                    <span class="lbl">Total Issues</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="summary-box">
+                    <p class="num text-info">{{ summary.issued_count }}</p>
+                    <span class="lbl">Active</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="summary-box">
+                    <p class="num text-danger">{{ summary.overdue_count }}</p>
+                    <span class="lbl">Overdue</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="summary-box">
+                    <p class="num text-success">{{ summary.returned_count }}</p>
+                    <span class="lbl">Returned</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="summary-box">
+                    <p class="num text-warning">₹{{ "%.2f"|format(summary.total_penalty) }}</p>
+                    <span class="lbl">Total Penalty</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="summary-box">
+                    <p class="num text-danger">₹{{ "%.2f"|format(summary.unpaid_penalty) }}</p>
+                    <span class="lbl">Unpaid Fine</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="summary-box">
+                    <p class="num text-success">₹{{ "%.2f"|format(summary.paid_penalty) }}</p>
+                    <span class="lbl">Paid Fine</span>
+                </div>
+            </div>
+            <div class="col">
+                <div class="summary-box">
+                    <p class="num text-secondary">{{ summary.waived_count }} (₹{{ "%.0f"|format(summary.waived_amount) }})</p>
+                    <span class="lbl">Waived</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Full Issues Table -->
+        <table class="print-table">
+            <thead>
+                <tr>
+                    <th style="width: 30px;">#</th>
+                    <th>Student Details</th>
+                    <th>Equipment Details</th>
+                    <th style="width: 45px; text-align: center;">Qty</th>
+                    <th>Issue Date</th>
+                    <th>Due Date</th>
+                    <th>Return Details</th>
+                    <th>Status</th>
+                    <th>Penalty Assessment</th>
+                    <th>Payment</th>
+                    <th>Issued By</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for issue in issues %}
+                <tr>
+                    <td style="text-align: center;">{{ loop.index }}</td>
+                    <td>
+                        <strong>{{ issue.student.user.first_name ~ ' ' ~ issue.student.user.last_name if issue.student.user.first_name else issue.student.user.username }}</strong><br>
+                        <small class="text-muted">Roll: {{ issue.student.roll_number }}</small>
+                        {% if issue.student.hostel_room %}
+                        <br><small class="text-muted">Room: {{ issue.student.hostel_room }}</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong>{{ issue.equipment.name }}</strong><br>
+                        <small class="text-muted">Code: {{ issue.equipment.equipment_code }}</small>
+                    </td>
+                    <td style="text-align: center;">{{ issue.quantity }}</td>
+                    <td>{{ issue.issued_date.strftime('%Y-%m-%d') }}</td>
+                    <td>{{ issue.expected_return_date.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        {% if issue.actual_return_date %}
+                            {{ issue.actual_return_date.strftime('%Y-%m-%d') }}<br>
+                            <small class="badge {% if issue.return_condition == 'damaged' %}bg-warning text-dark{% elif issue.return_condition == 'lost' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                Condition: {{ issue.return_condition|capitalize or 'Normal' }}
+                            </small>
+                        {% else %}
+                            <span class="text-muted">- Not Returned -</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if issue.status == 'Issued' %}
+                            <span class="badge bg-info text-dark">Issued</span>
+                        {% elif issue.status == 'Overdue' %}
+                            <span class="badge bg-danger">Overdue ({{ issue.days_overdue }}d)</span>
+                        {% elif issue.status == 'Returned' %}
+                            <span class="badge bg-success">Returned</span>
+                        {% else %}
+                            <span class="badge bg-secondary">{{ issue.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if issue.penalty_overridden %}
+                            {% if issue.penalty_amount == 0 %}
+                                <span style="text-decoration: line-through; color: #888;">₹{{ "%.2f"|format(issue.original_penalty_amount) }}</span>
+                                <span class="badge bg-success">Waived (₹0.00)</span>
+                            {% else %}
+                                <strong>₹{{ "%.2f"|format(issue.penalty_amount) }}</strong>
+                                <span class="badge bg-info text-dark">Overridden</span>
+                                <br><small class="text-muted">(Orig: ₹{{ "%.2f"|format(issue.original_penalty_amount) }})</small>
+                            {% endif %}
+                            {% if issue.penalty_override_reason %}
+                            <br><small style="color: #555;"><em>Reason: {{ issue.penalty_override_reason }}</em></small>
+                            {% endif %}
+                        {% elif issue.penalty_amount > 0 %}
+                            <strong>₹{{ "%.2f"|format(issue.penalty_amount) }}</strong>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if issue.penalty_overridden and issue.penalty_amount == 0 %}
+                            <span class="text-muted">Waived</span>
+                        {% elif issue.penalty_paid %}
+                            <span class="badge bg-success">Paid</span>
+                            {% if issue.penalty_paid_date %}
+                            <br><small class="text-muted">{{ issue.penalty_paid_date.strftime('%Y-%m-%d') }}</small>
+                            {% endif %}
+                        {% elif issue.penalty_amount > 0 %}
+                            <span class="badge bg-danger">Unpaid</span>
+                        {% else %}
+                            <span class="text-muted">N/A</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <small>{{ issue.issued_by.first_name ~ ' ' ~ issue.issued_by.last_name if issue.issued_by.first_name else issue.issued_by.username }}</small>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="11" class="text-center py-4 text-muted">No equipment issues found matching criteria.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Verification & Sign-off Section by H2 Member -->
+        <div class="verification-box">
+            <div class="row align-items-end">
+                <div class="col-8">
+                    <p class="fw-bold mb-1">H2 Health Team Member Attestation:</p>
+                    <p class="small text-muted mb-3" style="font-size: 0.8rem; line-height: 1.4;">
+                        I hereby attest that the equipment issues, return conditions, and penalty assessments/waivers recorded in this report have been physically verified against hostel custody and health room inventory logs.
+                    </p>
+                    <div class="row mt-3">
+                        <div class="col-6">
+                            <strong>Attested By (H2 Member):</strong><br>
+                            <span>{{ current_user.first_name ~ ' ' ~ current_user.last_name if current_user.first_name else current_user.username }}</span><br>
+                            <small class="text-muted">User: {{ current_user.username }} &bull; Role: {{ current_user.role }}</small><br>
+                            <small class="text-muted">Date: {{ now.strftime('%d-%b-%Y') }}</small>
+                        </div>
+                        <div class="col-6">
+                            <div style="border-bottom: 1px solid #000; height: 35px; margin-bottom: 4px;"></div>
+                            <small class="text-muted">H2 Member Signature</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-4 text-center">
+                    <div class="stamp-box">
+                        [ Official Stamp ]
+                    </div>
+                    <small class="text-muted d-block mt-1">Hostel Health Office Seal</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

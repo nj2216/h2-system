@@ -13,25 +13,121 @@
         border-radius: 0.5rem;
         margin-bottom: 2rem;
     }
+
+    .print-only {
+        display: none !important;
+    }
+
+    @media print {
+        nav.navbar,
+        footer,
+        .no-print,
+        #themeToggle,
+        .issue-header,
+        .btn-group,
+        form[method="GET"],
+        nav[aria-label="Page navigation"],
+        .modal {
+            display: none !important;
+        }
+
+        .print-only {
+            display: block !important;
+        }
+
+        body {
+            background: white !important;
+            color: black !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            font-size: 10pt !important;
+        }
+
+        .container {
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        .table-responsive {
+            overflow: visible !important;
+        }
+
+        .table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+        }
+
+        .table th, .table td {
+            border: 1px solid #777 !important;
+            padding: 4px 6px !important;
+            color: #000 !important;
+            display: table-cell !important;
+        }
+
+        /* Hide actions column in print */
+        .table th:last-child,
+        .table td:last-child {
+            display: none !important;
+        }
+
+        @page {
+            size: landscape;
+            margin: 8mm 10mm;
+        }
+    }
 </style>
-<div class="issue-header">
-    <div class="row mb-4">
-        <div class="col-md-8">
-            <h2><i class="bi bi-list-check"></i> Equipment Issues</h2>
+
+<div class="issue-header no-print">
+    <div class="row align-items-center">
+        <div class="col-md-5">
+            <h2 class="mb-0"><i class="bi bi-list-check"></i> Equipment Issues</h2>
         </div>
-        <div class="col-md-4 text-end">
-            {% if current_user.role in ['H2', 'Doctor'] %}
-            <a href="{{ url_for('equipment.issue_equipment') }}" class="btn btn-light btn-sm">
-                <i class="bi bi-plus-circle"></i> New Issue
-            </a>
-            {% endif %}
+        <div class="col-md-7 text-md-end mt-3 mt-md-0">
+            <div class="d-inline-flex flex-wrap gap-2">
+                <a href="{{ url_for('equipment.print_issues', status=status_filter, search=search) }}" 
+                   target="_blank" 
+                   class="btn btn-light btn-sm"
+                   title="Open complete printable report with H2 signature section">
+                    <i class="bi bi-printer"></i> Print Issues Report
+                </a>
+                <button type="button" 
+                        class="btn btn-outline-light btn-sm" 
+                        onclick="window.print()" 
+                        title="Quick print current screen">
+                    <i class="bi bi-file-earmark-text"></i> Quick Print
+                </button>
+                {% if current_user.role in ['H2', 'Doctor', 'Director'] %}
+                <a href="{{ url_for('equipment.issue_equipment') }}" class="btn btn-light btn-sm">
+                    <i class="bi bi-plus-circle"></i> New Issue
+                </a>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
 
 <div class="container mt-4">
+    <!-- Print-Only Letterhead -->
+    <div class="print-only mb-3">
+        <div class="text-center pb-2 border-bottom border-dark mb-2">
+            <h4 class="fw-bold mb-0">SRI SATHYA SAI INSTITUTE OF HIGHER LEARNING</h4>
+            <div class="small fw-semibold text-muted">NANDIGIRI HOSTEL &bull; HOLISTIC HEALTH (H2) TEAM</div>
+            <h5 class="fw-bold mt-1 text-uppercase text-dark">Equipment Issues & Penalties Report</h5>
+        </div>
+        <div class="d-flex justify-content-between small text-muted">
+            <div>
+                <strong>Generated / Certified By (H2 Member):</strong> {{ current_user.first_name }} {{ current_user.last_name }} ({{ current_user.role }})
+            </div>
+            <div>
+                <strong>Status Filter:</strong> {{ status_filter|capitalize }}
+            </div>
+        </div>
+    </div>
+
     <!-- Status Filters -->
-    <div class="mb-4">
+    <div class="mb-4 no-print">
         <div class="btn-group" role="group">
             <a href="{{ url_for('equipment.issue_list', status='all') }}" 
                class="btn btn-sm {% if status_filter == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">
@@ -53,7 +149,7 @@
     </div>
 
     <!-- Search -->
-    <form method="GET" class="mb-4">
+    <form method="GET" class="mb-4 no-print">
         <div class="input-group">
             <input type="text" name="search" class="form-control" placeholder="Search by student or equipment..." value="{{ search or '' }}">
             <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
@@ -97,8 +193,19 @@
                         {% endif %}
                     </td>
                     <td data-label="Penalty" class="d-none d-lg-table-cell">
-                        {% if issue.penalty_amount > 0 %}
+                        {% if issue.penalty_overridden %}
+                            {% if issue.penalty_amount == 0 %}
+                                <span class="badge bg-secondary text-decoration-line-through" title="Original: ₹{{ '%.2f'|format(issue.original_penalty_amount) }}">₹{{ "%.2f"|format(issue.original_penalty_amount) }}</span>
+                                <span class="badge bg-success" title="{{ issue.penalty_override_reason or 'Waived by Admin' }}"><i class="bi bi-check-circle"></i> Waived</span>
+                            {% else %}
+                                <span class="badge bg-warning">₹{{ "%.2f"|format(issue.penalty_amount) }}</span>
+                                <span class="badge bg-info text-dark" title="{{ issue.penalty_override_reason or 'Overridden by Admin' }}"><i class="bi bi-pencil"></i> Overridden</span>
+                            {% endif %}
+                        {% elif issue.penalty_amount > 0 %}
                             <span class="badge bg-warning">₹{{ "%.2f"|format(issue.penalty_amount) }}</span>
+                            {% if issue.penalty_paid %}
+                                <span class="badge bg-success">Paid</span>
+                            {% endif %}
                         {% else %}
                             <span class="text-muted">-</span>
                         {% endif %}
@@ -108,10 +215,19 @@
                             <button class="btn btn-sm btn-outline-info d-lg-none" data-bs-toggle="modal" data-bs-target="#detailsModal{{ issue.id }}" title="More Info">
                                 <i class="bi bi-info-circle"></i>
                             </button>
-                            {% if issue.status != 'Returned' and current_user.role in ['H2', 'Doctor'] %}
+                            {% if issue.status != 'Returned' and current_user.role in ['H2', 'Doctor', 'Director'] %}
                             <a href="{{ url_for('equipment.return_equipment', issue_id=issue.id) }}" class="btn btn-sm btn-outline-success" title="Process Return">
                                 <i class="bi bi-check-circle"></i>
                             </a>
+                            {% endif %}
+                            {% if current_user.role in ['H2', 'Director', 'Office', 'Warden'] %}
+                            <button type="button" 
+                                    class="btn btn-sm {% if issue.penalty_overridden %}btn-outline-info{% elif issue.penalty_amount > 0 %}btn-outline-warning{% else %}btn-outline-secondary{% endif %}" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#overridePenaltyModal{{ issue.id }}" 
+                                    title="{% if issue.penalty_overridden %}Penalty Overridden (Click to adjust/revert){% elif issue.penalty_amount > 0 %}Override / Revert Penalty{% else %}Override Penalty{% endif %}">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </button>
                             {% endif %}
                         </div>
                     </td>
@@ -169,8 +285,26 @@
                                     <div class="col-sm-6">
                                         <small class="text-muted">Penalty Amount</small>
                                         <p class="mb-0">
-                                            {% if issue.penalty_amount > 0 %}
+                                            {% if issue.penalty_overridden %}
+                                                {% if issue.penalty_amount == 0 %}
+                                                    <span class="badge bg-secondary text-decoration-line-through">₹{{ "%.2f"|format(issue.original_penalty_amount) }}</span>
+                                                    <span class="badge bg-success"><i class="bi bi-check-circle"></i> Waived (₹0.00)</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">₹{{ "%.2f"|format(issue.penalty_amount) }}</span>
+                                                    <span class="badge bg-info text-dark">Overridden (Orig: ₹{{ "%.2f"|format(issue.original_penalty_amount) }})</span>
+                                                {% endif %}
+                                                {% if issue.penalty_override_reason %}
+                                                    <br><small class="text-muted"><strong>Reason:</strong> {{ issue.penalty_override_reason }}</small>
+                                                {% endif %}
+                                                {% if issue.overridden_by %}
+                                                    <br><small class="text-muted"><strong>By:</strong> {{ issue.overridden_by.first_name }} {{ issue.overridden_by.last_name or issue.overridden_by.username }}
+                                                    {% if issue.penalty_overridden_at %}({{ issue.penalty_overridden_at.strftime('%Y-%m-%d %H:%M') }}){% endif %}</small>
+                                                {% endif %}
+                                            {% elif issue.penalty_amount > 0 %}
                                                 <span class="badge bg-warning">₹{{ "%.2f"|format(issue.penalty_amount) }}</span>
+                                                {% if issue.penalty_paid %}
+                                                    <span class="badge bg-success">Paid</span>
+                                                {% endif %}
                                             {% else %}
                                                 <span class="text-muted">-</span>
                                             {% endif %}
@@ -180,7 +314,12 @@
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                {% if issue.status != 'Returned' and current_user.role in ['H2', 'Doctor'] %}
+                                {% if current_user.role in ['H2', 'Director', 'Office', 'Warden'] %}
+                                <button type="button" class="btn btn-warning" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#overridePenaltyModal{{ issue.id }}">
+                                    <i class="bi bi-arrow-counterclockwise"></i> Override / Revert Penalty
+                                </button>
+                                {% endif %}
+                                {% if issue.status != 'Returned' and current_user.role in ['H2', 'Doctor', 'Director'] %}
                                 <a href="{{ url_for('equipment.return_equipment', issue_id=issue.id) }}" class="btn btn-success">
                                     <i class="bi bi-check-circle"></i> Process Return
                                 </a>
@@ -189,6 +328,134 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Override / Revert Penalty Modal -->
+                {% if current_user.role in ['H2', 'Director', 'Office', 'Warden'] %}
+                <div class="modal fade" id="overridePenaltyModal{{ issue.id }}" tabindex="-1" aria-labelledby="overridePenaltyModalLabel{{ issue.id }}" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <form method="POST" action="{{ url_for('equipment.override_penalty', issue_id=issue.id) }}">
+                                <input type="hidden" name="redirect_to" value="{{ request.full_path }}">
+                                <div class="modal-header bg-light">
+                                    <h5 class="modal-title" id="overridePenaltyModalLabel{{ issue.id }}">
+                                        <i class="bi bi-arrow-counterclockwise text-warning"></i> Override / Revert Penalty
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <!-- Issue Summary -->
+                                    <div class="card mb-3 border-0 bg-light">
+                                        <div class="card-body p-3">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <h6 class="mb-1"><strong>{{ issue.student.user.first_name }} {{ issue.student.user.last_name }}</strong></h6>
+                                                    <small class="text-muted">{{ issue.student.roll_number }} &bull; {{ issue.equipment.name }} (Qty: {{ issue.quantity }})</small>
+                                                </div>
+                                                <span class="badge {% if issue.status == 'Overdue' %}bg-danger{% elif issue.status == 'Returned' %}bg-success{% else %}bg-info{% endif %}">
+                                                    {{ issue.status }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {% if issue.penalty_overridden %}
+                                    <div class="alert alert-info py-2 px-3 small mb-3">
+                                        <i class="bi bi-info-circle-fill me-1"></i>
+                                        <strong>Currently Overridden:</strong> Original was ₹{{ "%.2f"|format(issue.original_penalty_amount) }}.
+                                        {% if issue.penalty_override_reason %}
+                                        <br><em>Reason: {{ issue.penalty_override_reason }}</em>
+                                        {% endif %}
+                                        {% if issue.overridden_by %}
+                                        <br><em>By: {{ issue.overridden_by.first_name }} {{ issue.overridden_by.last_name or issue.overridden_by.username }} ({{ issue.penalty_overridden_at.strftime('%Y-%m-%d %H:%M') if issue.penalty_overridden_at else '' }})</em>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+
+                                    <!-- Penalty Amount Input -->
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <label for="penalty_amount_{{ issue.id }}" class="form-label mb-0 fw-bold">Penalty Amount (₹)</label>
+                                            <span class="text-muted small">Current: <strong>₹{{ "%.2f"|format(issue.penalty_amount) }}</strong></span>
+                                        </div>
+                                        <div class="input-group">
+                                            <span class="input-group-text">₹</span>
+                                            <input type="number" 
+                                                   step="0.01" 
+                                                   min="0" 
+                                                   class="form-control" 
+                                                   id="penalty_amount_{{ issue.id }}" 
+                                                   name="penalty_amount" 
+                                                   value="{{ '%.2f'|format(issue.penalty_amount) }}" 
+                                                   required>
+                                            <button type="button" 
+                                                    class="btn btn-outline-danger" 
+                                                    onclick="document.getElementById('penalty_amount_{{ issue.id }}').value='0.00';" 
+                                                    title="Quick set to zero">
+                                                <i class="bi bi-arrow-counterclockwise"></i> Set to ₹0 (Waive)
+                                            </button>
+                                        </div>
+                                        <div class="form-text">Set to 0.00 to completely revert/waive the penalty.</div>
+                                    </div>
+
+                                    <!-- Quick Reason Chips -->
+                                    <div class="mb-2">
+                                        <label class="form-label small text-muted mb-1 d-block">Quick Reasons:</label>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill" style="font-size:0.75rem;" onclick="document.getElementById('reason_{{ issue.id }}').value='Returned on time - system delay';">Returned on time</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill" style="font-size:0.75rem;" onclick="document.getElementById('reason_{{ issue.id }}').value='Medical certificate / excused leave';">Medical certificate</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill" style="font-size:0.75rem;" onclick="document.getElementById('reason_{{ issue.id }}').value='Equipment was defective prior to issue';">Prior defect</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill" style="font-size:0.75rem;" onclick="document.getElementById('reason_{{ issue.id }}').value='Administrative waiver approved';">Admin waiver</button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 rounded-pill" style="font-size:0.75rem;" onclick="document.getElementById('reason_{{ issue.id }}').value='Mistaken penalty assessment reverted';">Assessment error</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Reason Textarea -->
+                                    <div class="mb-3">
+                                        <label for="reason_{{ issue.id }}" class="form-label fw-bold">Reason for Override / Revert</label>
+                                        <textarea class="form-control" 
+                                                  id="reason_{{ issue.id }}" 
+                                                  name="reason" 
+                                                  rows="2" 
+                                                  placeholder="Enter the reason why penalty is being reverted or adjusted..." 
+                                                  required>{{ issue.penalty_override_reason or '' }}</textarea>
+                                    </div>
+                                </div>
+
+                                <div class="modal-footer d-flex justify-content-between">
+                                    <div>
+                                        {% if issue.penalty_overridden %}
+                                        <button type="submit" 
+                                                name="action" 
+                                                value="restore" 
+                                                class="btn btn-outline-secondary btn-sm" 
+                                                onclick="return confirm('Restore original calculated penalty of ₹{{ '%.2f'|format(issue.original_penalty_amount) }}?');" 
+                                                title="Reset to system-calculated amount">
+                                            <i class="bi bi-arrow-repeat"></i> Restore Original (₹{{ "%.2f"|format(issue.original_penalty_amount) }})
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" 
+                                                name="action" 
+                                                value="revert" 
+                                                class="btn btn-warning btn-sm" 
+                                                onclick="document.getElementById('penalty_amount_{{ issue.id }}').value='0.00'; return confirm('Are you sure you want to revert/waive this penalty to ₹0.00?');">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Revert to ₹0.00
+                                        </button>
+                                        <button type="submit" 
+                                                name="action" 
+                                                value="override" 
+                                                class="btn btn-primary btn-sm">
+                                            <i class="bi bi-check-circle"></i> Save Override
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
                 {% else %}
                 <tr>
                     <td colspan="8" class="text-center text-muted py-4">No equipment issues found</td>
@@ -198,9 +465,37 @@
         </table>
     </div>
 
+    <!-- Print-Only Attestation by H2 Member -->
+    <div class="print-only mt-4 pt-3 border-top border-dark">
+        <div class="row align-items-end">
+            <div class="col-8">
+                <p class="fw-bold mb-1">Attestation by H2 Team Member:</p>
+                <p class="small text-muted mb-3" style="font-size: 0.8rem; line-height: 1.4;">
+                    Certified that the above equipment issues, return conditions, and penalty records have been verified against physical hostel equipment inventory logs.
+                </p>
+                <div class="row mt-3">
+                    <div class="col-6">
+                        <small class="text-muted">Verified by: <strong>{{ current_user.first_name ~ ' ' ~ current_user.last_name if current_user.first_name else current_user.username }}</strong> ({{ current_user.role }})</small><br>
+                        <small class="text-muted">Username: {{ current_user.username }}</small>
+                    </div>
+                    <div class="col-6 text-center">
+                        <div style="border-bottom: 1px solid #000; height: 30px; margin-bottom: 4px;"></div>
+                        <small class="text-muted">H2 Member Signature & Date</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4 text-center">
+                <div style="border: 1px dashed #777; height: 60px; line-height: 60px; font-size: 0.75rem; color: #888;">
+                    [ Official Stamp ]
+                </div>
+                <small class="text-muted d-block mt-1">Hostel Health Office Seal</small>
+            </div>
+        </div>
+    </div>
+
     <!-- Pagination -->
     {% if issues.pages > 1 %}
-    <nav aria-label="Page navigation">
+    <nav aria-label="Page navigation" class="no-print">
         <ul class="pagination justify-content-center">
             {% if issues.has_prev %}
             <li class="page-item">

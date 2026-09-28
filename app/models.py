@@ -476,6 +476,13 @@ class EquipmentIssue(db.Model):
     penalty_paid = db.Column(db.Boolean, default=False)
     penalty_paid_date = db.Column(db.DateTime)
     
+    # Penalty override tracking
+    penalty_overridden = db.Column(db.Boolean, default=False)
+    original_penalty_amount = db.Column(db.Float, default=0.0)
+    penalty_override_reason = db.Column(db.Text)
+    penalty_overridden_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    penalty_overridden_at = db.Column(db.DateTime)
+    
     status = db.Column(db.String(50), default='Issued')  # Issued, Overdue, Returned, Defaulted
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -484,6 +491,7 @@ class EquipmentIssue(db.Model):
     student = db.relationship('Student', backref='equipment_issues')
     issued_by = db.relationship('User', foreign_keys=[issued_by_id], backref='equipment_issues_issued')
     verified_by = db.relationship('User', foreign_keys=[verified_by_id], backref='equipment_issues_verified')
+    overridden_by = db.relationship('User', foreign_keys=[penalty_overridden_by_id], backref='equipment_penalties_overridden')
     
     def mark_as_overdue(self):
         """Mark issue as overdue and calculate penalty"""
@@ -497,7 +505,7 @@ class EquipmentIssue(db.Model):
             self.days_overdue = max(0, days_over)  # 0 or more days
             
             equipment = MedicalEquipment.query.get(self.equipment_id)
-            if self.days_overdue > 0:  # Only charge penalty if actually overdue
+            if self.days_overdue > 0 and not self.penalty_overridden:  # Only charge penalty if actually overdue and not overridden
                 self.penalty_amount = self.days_overdue * equipment.daily_penalty * self.quantity
             
             db.session.commit()
@@ -521,17 +529,19 @@ class EquipmentIssue(db.Model):
         elif condition == 'damaged':
             equipment.quantity_damaged += self.quantity
             self.status = 'Returned'
-            self.penalty_amount = equipment.unit_cost * self.quantity * 0.5  # 50% penalty for damage
+            if not self.penalty_overridden:
+                self.penalty_amount = equipment.unit_cost * self.quantity * 0.5  # 50% penalty for damage
         elif condition == 'lost':
             equipment.quantity_lost += self.quantity
             self.status = 'Returned'
-            self.penalty_amount = equipment.unit_cost * self.quantity  # Full replacement cost
+            if not self.penalty_overridden:
+                self.penalty_amount = equipment.unit_cost * self.quantity  # Full replacement cost
         
         # Calculate overdue penalty (only if actually late)
         if self.actual_return_date > self.expected_return_date:
             days_over = (self.actual_return_date - self.expected_return_date).days
             days_over = max(0, days_over)  # 0 or more days
-            if days_over > 0:
+            if days_over > 0 and not self.penalty_overridden:
                 self.penalty_amount += days_over * equipment.daily_penalty * self.quantity
             self.days_overdue = days_over
         else:
@@ -539,6 +549,35 @@ class EquipmentIssue(db.Model):
         
         self.is_overdue = False
         db.session.commit()
+    
+    def override_penalty(self, new_amount, reason=None, user_id=None):
+        """Override or adjust penalty amount"""
+        if not self.penalty_overridden:
+            self.original_penalty_amount = self.penalty_amount if self.penalty_amount is not None else 0.0
+        
+        self.penalty_amount = float(new_amount)
+        self.penalty_overridden = True
+        self.penalty_override_reason = reason
+        self.penalty_overridden_by_id = user_id
+        self.penalty_overridden_at = datetime.utcnow()
+        if self.penalty_amount == 0.0:
+            self.penalty_paid = False
+            self.penalty_paid_date = None
+        db.session.commit()
+    
+    def revert_penalty(self, reason=None, user_id=None):
+        """Revert / waive penalty completely to 0.0"""
+        self.override_penalty(0.0, reason=reason, user_id=user_id)
+    
+    def restore_penalty(self):
+        """Restore original system-calculated penalty"""
+        if self.penalty_overridden:
+            self.penalty_amount = self.original_penalty_amount
+            self.penalty_overridden = False
+            self.penalty_override_reason = None
+            self.penalty_overridden_by_id = None
+            self.penalty_overridden_at = None
+            db.session.commit()
     
     def __repr__(self):
         return f'<EquipmentIssue {self.id} - Student {self.student_id}>'
