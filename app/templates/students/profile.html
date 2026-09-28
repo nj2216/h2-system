@@ -25,7 +25,7 @@
                 <h5 class="mb-0"><i class="bi bi-person"></i> Personal Information</h5>
             </div>
             <div class="card-body">
-                <table class="table table-sm table-borderless">
+                <table class="table table-sm table-borderless mb-0 profile-info-table">
                     <tr>
                         <th>Email:</th>
                         <td>{{ student.user.email }}</td>
@@ -57,7 +57,7 @@
                 <h5 class="mb-0"><i class="bi bi-heart-pulse"></i> Medical Information</h5>
             </div>
             <div class="card-body">
-                <table class="table table-sm table-borderless">
+                <table class="table table-sm table-borderless mb-0 profile-info-table">
                     <tr>
                         <th>Blood Group:</th>
                         <td>{{ student.blood_group or '-' }}</td>
@@ -87,7 +87,7 @@
                 <h5 class="mb-0"><i class="bi bi-telephone"></i> Emergency Contact</h5>
             </div>
             <div class="card-body">
-                <table class="table table-sm table-borderless">
+                <table class="table table-sm table-borderless mb-0 profile-info-table">
                     <tr>
                         <th>Name:</th>
                         <td>{{ student.emergency_contact_name or '-' }}</td>
