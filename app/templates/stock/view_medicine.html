@@ -20,7 +20,7 @@
 
     .batch-row {
         border-left: 4px solid var(--bs-border-color);
-        transition: all 0.3s ease;
+        transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
     }
 
     .batch-row:hover {
@@ -41,6 +41,67 @@
         border-left-color: var(--bs-danger);
         background-color: #fef2f2;
         opacity: 0.7;
+    }
+
+    /* Dark Mode Support for Batches Table */
+    [data-bs-theme="dark"] .batch-row {
+        border-left-color: #374151;
+        background-color: transparent;
+    }
+
+    [data-bs-theme="dark"] .batch-row:hover {
+        background-color: #283344 !important;
+    }
+
+    [data-bs-theme="dark"] .batch-row:hover > td {
+        background-color: #283344 !important;
+        color: #ffffff !important;
+    }
+
+    [data-bs-theme="dark"] .batch-row.fefo-priority {
+        border-left-color: #10b981 !important;
+        background-color: rgba(16, 185, 129, 0.15) !important;
+    }
+
+    [data-bs-theme="dark"] .batch-row.fefo-priority td {
+        color: #f8fafc !important;
+    }
+
+    [data-bs-theme="dark"] .batch-row.fefo-priority:hover,
+    [data-bs-theme="dark"] .batch-row.fefo-priority:hover > td {
+        background-color: rgba(16, 185, 129, 0.25) !important;
+        color: #ffffff !important;
+    }
+
+    [data-bs-theme="dark"] .batch-row.expiring-soon {
+        border-left-color: #f59e0b !important;
+        background-color: rgba(217, 119, 6, 0.15) !important;
+    }
+
+    [data-bs-theme="dark"] .batch-row.expiring-soon td {
+        color: #f8fafc !important;
+    }
+
+    [data-bs-theme="dark"] .batch-row.expiring-soon:hover,
+    [data-bs-theme="dark"] .batch-row.expiring-soon:hover > td {
+        background-color: rgba(217, 119, 6, 0.25) !important;
+        color: #ffffff !important;
+    }
+
+    [data-bs-theme="dark"] .batch-row.expired {
+        border-left-color: #ef4444 !important;
+        background-color: rgba(220, 38, 38, 0.15) !important;
+        opacity: 0.85;
+    }
+
+    [data-bs-theme="dark"] .batch-row.expired td {
+        color: #fca5a5 !important;
+    }
+
+    [data-bs-theme="dark"] .batch-row.expired:hover,
+    [data-bs-theme="dark"] .batch-row.expired:hover > td {
+        background-color: rgba(220, 38, 38, 0.25) !important;
+        color: #ffffff !important;
     }
 
     .fefo-badge {
@@ -75,6 +136,24 @@
         padding: 0.25rem 0.75rem;
         border-radius: 2rem;
         font-size: 0.85rem;
+    }
+
+    [data-bs-theme="dark"] .shelf-badge {
+        background-color: rgba(59, 130, 246, 0.2) !important;
+        color: #93c5fd !important;
+        border: 1px solid rgba(59, 130, 246, 0.35);
+    }
+
+    [data-bs-theme="dark"] .expiry-badge.expiring-soon {
+        background-color: rgba(245, 158, 11, 0.2) !important;
+        color: #fde68a !important;
+        border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+
+    [data-bs-theme="dark"] .expiry-badge.expired {
+        background-color: rgba(239, 68, 68, 0.2) !important;
+        color: #fca5a5 !important;
+        border: 1px solid rgba(239, 68, 68, 0.35);
     }
 
     .stock-summary {
@@ -281,9 +360,6 @@
                                         </td>
                                     </tr>
                                 {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
                             </tbody>
                         </table>
                     </div>

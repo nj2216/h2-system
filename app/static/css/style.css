@@ -197,6 +197,64 @@ body {
     color: #cbd5e1 !important;
 }
 
+/* Batch rows status indicators in dark theme */
+[data-bs-theme="dark"] .batch-row {
+    border-left-color: #374151;
+    background-color: transparent;
+}
+
+[data-bs-theme="dark"] .batch-row:hover,
+[data-bs-theme="dark"] .batch-row:hover > td {
+    background-color: #283344 !important;
+    color: #ffffff !important;
+}
+
+[data-bs-theme="dark"] .batch-row.fefo-priority {
+    border-left-color: #10b981 !important;
+    background-color: rgba(16, 185, 129, 0.15) !important;
+}
+
+[data-bs-theme="dark"] .batch-row.fefo-priority td {
+    color: #f8fafc !important;
+}
+
+[data-bs-theme="dark"] .batch-row.fefo-priority:hover,
+[data-bs-theme="dark"] .batch-row.fefo-priority:hover > td {
+    background-color: rgba(16, 185, 129, 0.25) !important;
+    color: #ffffff !important;
+}
+
+[data-bs-theme="dark"] .batch-row.expiring-soon {
+    border-left-color: #f59e0b !important;
+    background-color: rgba(217, 119, 6, 0.15) !important;
+}
+
+[data-bs-theme="dark"] .batch-row.expiring-soon td {
+    color: #f8fafc !important;
+}
+
+[data-bs-theme="dark"] .batch-row.expiring-soon:hover,
+[data-bs-theme="dark"] .batch-row.expiring-soon:hover > td {
+    background-color: rgba(217, 119, 6, 0.25) !important;
+    color: #ffffff !important;
+}
+
+[data-bs-theme="dark"] .batch-row.expired {
+    border-left-color: #ef4444 !important;
+    background-color: rgba(220, 38, 38, 0.15) !important;
+    opacity: 0.85;
+}
+
+[data-bs-theme="dark"] .batch-row.expired td {
+    color: #fca5a5 !important;
+}
+
+[data-bs-theme="dark"] .batch-row.expired:hover,
+[data-bs-theme="dark"] .batch-row.expired:hover > td {
+    background-color: rgba(220, 38, 38, 0.25) !important;
+    color: #ffffff !important;
+}
+
 
 /* Detail / Key-Value and Borderless Tables */
 .table-borderless,
