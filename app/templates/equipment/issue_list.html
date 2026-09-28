@@ -35,12 +35,13 @@
             display: block !important;
         }
 
-        body {
+        body, [data-bs-theme="dark"] body {
             background: white !important;
+            background-color: white !important;
             color: black !important;
             margin: 0 !important;
             padding: 0 !important;
-            font-size: 10pt !important;
+            font-size: 9.5pt !important;
         }
 
         .container {
@@ -52,17 +53,92 @@
 
         .table-responsive {
             overflow: visible !important;
+            border: none !important;
+            background: transparent !important;
         }
 
         .table {
+            display: table !important;
             width: 100% !important;
             border-collapse: collapse !important;
+            background-color: transparent !important;
+            color: #000000 !important;
         }
 
-        .table th, .table td {
+        .table thead,
+        .table thead tr {
+            display: table-header-group !important;
+        }
+
+        .table thead th,
+        [data-bs-theme="dark"] .table thead th {
+            display: table-cell !important;
+            background-color: #f1f3f5 !important;
+            color: #111827 !important;
+            font-weight: 700 !important;
+            border: 1px solid #555 !important;
+            border-bottom: 2px solid #222 !important;
+            padding: 6px 8px !important;
+            text-align: left !important;
+            font-size: 8.5pt !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.3px !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        .table tbody {
+            display: table-row-group !important;
+        }
+
+        .table tbody tr {
+            display: table-row !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            background-color: transparent !important;
+        }
+
+        .table tbody td,
+        [data-bs-theme="dark"] .table tbody td {
+            display: table-cell !important;
             border: 1px solid #777 !important;
-            padding: 4px 6px !important;
-            color: #000 !important;
+            padding: 5px 8px !important;
+            color: #111827 !important;
+            background-color: transparent !important;
+            text-align: left !important;
+            font-size: 8.5pt !important;
+            vertical-align: middle !important;
+        }
+
+        /* Reset mobile card first-child header transformation */
+        .table tbody td:first-child,
+        .table:not(.table-bordered):not(.table-borderless) tbody td:first-child {
+            display: table-cell !important;
+            font-size: 8.5pt !important;
+            font-weight: normal !important;
+            background-color: transparent !important;
+            padding: 5px 8px !important;
+            border: 1px solid #777 !important;
+            text-align: left !important;
+        }
+
+        /* Suppress data-label ::before pseudo-elements in print */
+        .table td:before,
+        .table tbody td:before,
+        .table:not(.table-bordered):not(.table-borderless) tbody td:before {
+            display: none !important;
+            content: none !important;
+        }
+
+        /* Force responsive d-none table columns to display in print */
+        .table th.d-none,
+        .table td.d-none,
+        th[class*="d-sm-table-cell"],
+        td[class*="d-sm-table-cell"],
+        th[class*="d-md-table-cell"],
+        td[class*="d-md-table-cell"],
+        th[class*="d-lg-table-cell"],
+        td[class*="d-lg-table-cell"] {
             display: table-cell !important;
         }
 
@@ -70,6 +146,19 @@
         .table th:last-child,
         .table td:last-child {
             display: none !important;
+        }
+
+        .badge {
+            border: 1px solid #444 !important;
+            color: #000000 !important;
+            background: transparent !important;
+            padding: 2px 4px !important;
+            font-size: 7.5pt !important;
+            font-weight: 600 !important;
+        }
+
+        .text-muted, [data-bs-theme="dark"] .text-muted {
+            color: #4b5563 !important;
         }
 
         @page {
@@ -118,10 +207,12 @@
         </div>
         <div class="d-flex justify-content-between small text-muted">
             <div>
-                <strong>Generated / Certified By (H2 Member):</strong> {{ current_user.first_name }} {{ current_user.last_name }} ({{ current_user.role }})
+                <strong>Generated / Certified By (H2 Member):</strong> {{ current_user.first_name }} {{ current_user.last_name }} ({{ current_user.role }})<br>
+                <strong>Date & Time:</strong> {{ now.strftime('%d-%b-%Y %I:%M %p') if now else '' }}
             </div>
-            <div>
-                <strong>Status Filter:</strong> {{ status_filter|capitalize }}
+            <div class="text-end">
+                <strong>Status Filter:</strong> {{ status_filter|capitalize }}<br>
+                <strong>Search Filter:</strong> {{ search or 'All records' }}
             </div>
         </div>
     </div>

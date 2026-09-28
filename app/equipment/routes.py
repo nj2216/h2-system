@@ -154,8 +154,8 @@ def issue_list():
         issue.mark_as_overdue()
     
     issues = query.order_by(EquipmentIssue.issued_date.desc()).paginate(page=page, per_page=20)
-    
-    return render_template('equipment/issue_list.html', issues=issues, status_filter=status_filter, search=search)
+    now = datetime.utcnow()
+    return render_template('equipment/issue_list.html', issues=issues, status_filter=status_filter, search=search, now=now)
 
 
 @equipment_bp.route('/issues/print', methods=['GET'])

@@ -249,6 +249,33 @@ class EquipmentPenaltyOverrideTestCase(unittest.TestCase):
         res = self.client.get('/equipment/issues/print', follow_redirects=False)
         self.assertEqual(res.status_code, 302)  # Blocked by require_role
 
+    def test_quick_print_and_dark_mode_responsive_styles(self):
+        """Test Quick Print template rendering and CSS dark mode responsive rules"""
+        self.client.post('/login', data={'username': 'director_test', 'password': 'pass123'}, follow_redirects=True)
+        res = self.client.get('/equipment/issues')
+        self.assertEqual(res.status_code, 200)
+        html = res.data.decode('utf-8')
+
+        # Check Quick Print button and print elements
+        self.assertIn('Quick Print', html)
+        self.assertIn('window.print()', html)
+        self.assertIn('.table thead,', html)
+        self.assertIn('display: table-header-group !important;', html)
+        self.assertIn('display: table-row !important;', html)
+        self.assertIn('.table tbody td:first-child', html)
+
+        # Check CSS file contains dark mode responsiveness for print-toolbar and table-hover
+        import os
+        css_path = os.path.join(self.app.root_path, 'static', 'css', 'style.css')
+        with open(css_path, 'r', encoding='utf-8') as f:
+            css = f.read()
+
+        self.assertIn('[data-bs-theme="dark"] .print-toolbar', css)
+        self.assertIn('[data-bs-theme="dark"] .table-hover', css)
+        self.assertIn('@media screen and (max-width: 768px)', css)
+        self.assertIn('display: table-header-group !important;', css)
+
 
 if __name__ == '__main__':
     unittest.main()
+
