@@ -93,6 +93,7 @@
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                                 <li><a class="dropdown-item" href="{{ url_for('dashboards.dashboard') }}">Dashboard</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('system_health.dashboard') }}"><i class="bi bi-activity text-success"></i> System Health</a></li>
                                 <li><a class="dropdown-item" href="{{ url_for('auth.change_password') }}">Change Password</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}">Logout</a></li>
@@ -128,7 +129,7 @@
     <!-- Footer -->
     <footer class="bg-body-tertiary border-top py-4 mt-5">
         <div class="container text-center">
-            <p class="mb-0 text-body-secondary">&copy; <span id="this_year"></span> Nandigiri Campus - Holistic Health Digital Companian</p>
+            <p class="mb-0 text-body-secondary">&copy; <span id="this_year"></span> Nandigiri Campus - Holistic Health Digital Companian &bull; <a href="{{ url_for('system_health.dashboard') }}" class="text-decoration-none text-body-secondary small"><i class="bi bi-activity text-success"></i> System Health</a></p>
         </div>
     </footer>
 

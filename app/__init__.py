@@ -31,6 +31,10 @@ def create_app(config_name=None):
     db.init_app(app)
     login_manager.init_app(app)
     
+    # Initialize application logging and in-memory log buffer
+    from app.system_health.services import init_logging
+    init_logging(app)
+    
     # Register user loader for Flask-Login
     from app.models import User
     
@@ -81,6 +85,7 @@ def register_blueprints(app):
     from app.dashboards.routes import dashboards_bp
     from app.main.routes import main_bp
     from app.equipment import equipment_bp
+    from app.system_health.routes import system_health_bp
     
     app.register_blueprint(main_bp)
     app.register_blueprint(auth_bp)
@@ -91,6 +96,7 @@ def register_blueprints(app):
     app.register_blueprint(sickleave_bp, url_prefix='/sickleave')
     app.register_blueprint(dashboards_bp, url_prefix='/dashboard')
     app.register_blueprint(equipment_bp)
+    app.register_blueprint(system_health_bp, url_prefix='/system-health')
 
 
 def register_error_handlers(app):
